@@ -1,0 +1,625 @@
+<?php
+/*
+include_once('league-common.inc');
+include_once('league-results.inc');
+include_once('league-upload.inc');
+include_once('league-driver.inc');
+*/
+
+include(drupal_get_path('module', 'league_graph') .'/jpgraph/jpgraph.php');
+include(drupal_get_path('module', 'league_graph') .'/jpgraph/jpgraph_line.php');
+include(drupal_get_path('module', 'league_graph') .'/jpgraph/jpgraph_bar.php');
+
+
+
+
+
+function league_graph_menu() {
+  $accessAdmin = user_access('access administration pages');
+  
+  $items = array();
+
+  $items[] = array( 'path' => 'league_graph',
+                    'title' => t('League graph'),
+                    'callback' => 'league_graph',
+                    'access' => user_access('access content'),
+		    type => MENU_CALLBACK);
+  
+  $items[] = array( 'path' => 'league_graph/positions',
+                    'title' => t('League graph positions'),
+                    'callback' => 'league_graph_positions',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+  
+  $items[] = array( 'path' => 'league_graph/positionsLarge',
+                    'title' => t('League graph positions'),
+                    'callback' => 'league_graph_positions_large',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+  
+  $items[] = array( 'path' => 'league_graph/times',
+                    'title' => t('League graph times'),
+                    'callback' => 'league_graph_times',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+
+  $items[] = array( 'path' => 'league_graph/timesLarge',
+                    'title' => t('League graph times large'),
+                    'callback' => 'league_graph_timesLarge',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+
+  $items[] = array( 'path' => 'league_graph/detailsLarge',
+                    'title' => t('League graph details large'),
+                    'callback' => 'league_graph_detailsLarge',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+
+  $items[] = array( 'path' => 'league_graph/detailsSelect',
+                    'title' => t('Driver compare chart'),
+                    'callback' => 'league_graph_detailsSelect',
+                    'access' => user_access('access content'),
+                    type => MENU_CALLBACK);
+
+  
+  return $items;
+}
+function _league_graph_all() {
+  return "";
+} 
+
+function league_graph_help($section='') {
+  $output = '';
+  switch ($section) {
+    case "admin/modules#description":
+      $output = t("Add graph functions to the league modul");
+      break;
+    case "admin/help#league_graph_graph":
+      $output = t("Add graph functions to the league modul");
+    break;
+  }
+  return $output;
+} 
+
+
+function league_graph_perm() {
+  return array('access content', 'access administration pages');
+}
+/*
+function league_graph_settings() {  
+  if (!user_access("access administration pages")) {
+    return message_access();  
+  }
+  $form['league_graph_block_id'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('League displayed in block'), 
+    '#default_value' => variable_get('league_graph_block_display', 1), 
+    '#description' => t("Select the league that should be displayed in the block."), 
+    '#maxlength' => '2', '#size' => '2');
+    
+    return $form;
+}
+*/
+
+function league_graph_invert($value) {
+  if (intval($value)) {
+    return -$value;
+  }
+  return $value;
+}
+
+function league_graph_positions_large($id) {
+  league_graph_positions($id, 1024, 786);
+}
+
+function league_graph_positions($id, $width=640, $height = 480) {
+ 
+  
+  $colors = array("blue", "cyan", "darkorange", "darkgreen", "brown", "blueviolet", "darkred", "darkorchid3", "navy", "red", "peru", "springgreen3", 
+    "steelblue", "slategray4", "sienna3", "seagreen4", "tan1", "hotpink3", "khaki4", "lawngreen" );
+  
+  $query = "SELECT drivers.starting_position, drivers.id, laps.position, laps.number, drivers.lfsworld_name, results.laps " .
+    " FROM {league_laps} AS laps, {league_drivers} AS drivers, {league_results} as results" . 
+    " WHERE laps.raceEntry_id = %d AND laps.driver_id = drivers.id AND drivers.id = results.driver_id ORDER BY results.position";
+  
+    $result = db_query($query, $id);
+    //echo $query;
+    $yData = array();
+    
+    
+    $names = league_get_profile_names();
+    
+    $laps = 0;
+    while ($row = db_fetch_object($result)) {
+     if ($row->number == 1) {
+       $yData[strtolower($row->lfsworld_name)][$row->number - 1] = 20-$row->starting_position;
+       if ($laps < $row->laps) {
+         $laps = $row->laps;
+       }
+     }
+     $yData[strtolower($row->lfsworld_name)][$row->number] = 20-$row->position;
+    }
+    $drivers = count($yData);
+    
+    $graph  = new Graph($width, $height,"auto", 60);     
+    $graph->img->SetMargin(30,260,45,30);
+    $graph->SetScale("intint", 19-$drivers, 20 ,0, $laps ); 
+
+    $graph->legend->Pos( 0.01,0.5,"right" ,"center");
+    $graph->SetMarginColor('white');
+
+    $lineplot = array();
+    $i=0;
+
+		$lineplot = array();
+    while (list($key, $positions) = each($yData)) {
+      $lineplot[$i] = new LinePlot($positions);
+      $lineplot[$i]->SetColor($colors[$i%20]); 
+      $lineplot[$i]->SetWeight(2);
+      $lineplot[$i]->SetLegend(utf8_decode($names[$key]->name));
+      $graph->Add($lineplot[$i]);
+      $i++;
+    }
+    
+    
+    $labelArrayLaps = array();
+    for($i=0; $i<$laps+1; $i++) {
+      $labelArrayLaps[] = $i;
+    }
+  
+    $graph->xaxis->SetTickLabels( $labelArrayLaps);
+    
+   
+    $labelArrayPosition = array();
+    for($i=$drivers+1; $i>-1; $i--) {
+      $labelArrayPosition[] = $i;
+    }
+  
+    $graph->yaxis->SetTickLabels($labelArrayPosition);
+    
+    
+    $graph->xgrid->Show(true);
+    $graph->ygrid->Show(true,true);
+    $graph->title->Set('Lap per lap graph');
+    $graph->Stroke();
+}
+
+
+function league_graph_timesLarge($id) {
+  league_graph_times($id, 1024,786);
+}
+
+function league_graph_times($id, $width=640, $height = 480) {
+  $scale = 200000; 
+  $colors = array("blue", "cyan", "darkorange", "darkgreen", "brown", "blueviolet", "darkred", "darkorchid3", "navy", "red", "peru", "springgreen3", 
+    "steelblue", "slategray4", "sienna3", "seagreen4", "tan1", "hotpink3", "khaki4", "lawngreen" );
+  
+  $query = "SELECT drivers.starting_position, drivers.id, laps.*, drivers.lfsworld_name, results.laps, results.position " .
+    " FROM {league_laps} AS laps, {league_drivers} AS drivers, {league_results} as results" . 
+    " WHERE laps.raceEntry_id = %d AND laps.driver_id = drivers.id AND drivers.id = results.driver_id ORDER BY results.position, laps.number";
+  
+    $result = db_query($query, $id);
+    $lapTimes = array();
+    
+    $names = league_get_profile_names();
+    $laps = 0;
+    $positions = array();
+		$i = 0;
+		$lapNumber = 0;
+		$maxLapNumber = 0;
+		$numberSplits = 1;
+		while ($row = db_fetch_object($result)) {
+	
+			$lfsworldName = strtolower($row->lfsworld_name);
+			//echo "name: " . $lfsworldName . " lap: " . $row->number . "<br/>";
+			
+			$lapNumber = $row->number;
+			
+			//echo $lapNumber . " - " . $lfsworldName . "<br/>";
+			if ($row->number == 1) {
+        $positions[$row->position] = $lfsworldName;
+				$time = 0;
+				if ($row->position == 1) {
+					$maxLapNumber = $row->laps;
+					
+					if ($row->split2 > 0) {
+						$numberSplits++;
+					}
+					if ($row->split3 > 0) {
+						$numberSplits++;
+					}
+					if ($row->split4 > 0) {
+						$numberSplits++;
+					}
+				}
+      }
+
+      
+
+      $lapTimes[$lfsworldName][] = new LapData($row->split1, $lapNumber, 1);
+			$sumSplits = $row->split1;
+			if ($row->split2 > 0) {
+	     	$lapTimes[$lfsworldName][] =new LapData($row->split2, $lapNumber, 2);
+				$sumSplits += $row->split2;
+			}
+			if ($row->split3 > 0) {
+	     	$lapTimes[$lfsworldName][] = new LapData($row->split3, $lapNumber, 3);
+				$sumSplits += $row->split3;
+			}
+			if ($row->split4 > 0) {
+	     	$lapTimes[$lfsworldName][] = new LapData($row->split4, $lapNumber, 4);
+				$sumSplits += $row->split4;
+			}
+			
+      if ($laps < $row->laps) {
+         $laps = $row->laps;
+       }
+
+    }
+
+		//echo "maxLapNumber: " . $maxLapNumber . "<br/>";
+		
+		
+		$endTime = 0;
+		$averateSplit = array();
+		$laps = $lapTimes[$positions[1]];
+		foreach ($laps as $lap) {
+			$endTime += $lap->time;
+			$averateSplit[$lap->split] += $lap->time;
+			//echo "splitnumber: " . $lap->split . " time: ". $lap->time . " sum: " . 	$averateSplit[$lap->split] . "<br/>";
+		}
+
+		for($i=1; $i<=$numberSplits; $i++) {
+				$averateSplit[$i] = round($averateSplit[$i]/$maxLapNumber);
+		}
+		
+		//print_r($averateSplit);
+		//echo "endTime: " . $endTime . "<br/>";
+		//echo "numberSplits: " . $numberSplits . "<br/>";
+
+    $yData = array();
+    $yMax = 0;
+    while (list($key, $overallTimes) = each($lapTimes)) {
+      $i = 0;
+			$previous = 0;
+			//echo "key: " . $key . "<br/>";
+      foreach($overallTimes as $lap) {
+				
+				$previous = $lap->time - $averateSplit[$lap->split] + $previous;
+        if ($previous < $scale) {
+					$yData[$key][$i] = -$previous;
+					if ($yMax < $yData[$key][$i]) {
+            $yMax = $yData[$key][$i];
+          }
+				} else {
+          $yData[$key][$i] = - ${scale};
+				}
+        //echo "driver: " . $key . " lap: " . $lap . " - delta " . $yData[$key][$i] . "<br/>";
+        $i++;
+      }
+    }
+
+		$drivers = count($yData);
+
+		//echo "drivers: " . $drivers;
+		//print_r($yData);
+		//exit;
+		
+  
+  	$graph  = new Graph($width, $height,"auto", 60);     
+    $graph->img->SetMargin(40,260,45,30);
+    $graph->SetScale("intint", -${scale}, $yMax+10000 , 0, $maxLapNumber*$numberSplits-1); 
+   
+
+    $graph->legend->Pos( 0.01,0.5,"right" ,"center");
+    $graph->SetMarginColor('white');
+
+    $i=0;
+		$lineplot = array();
+    while (list($key, $lapTimes) = each($yData)) {
+      $lineplot[$i] = new LinePlot($lapTimes);
+      $lineplot[$i]->SetColor($colors[$i%20]);
+      $lineplot[$i]->SetWeight(1);
+      $lineplot[$i]->SetLegend(utf8_decode($names[$key]->name));
+      $graph->Add($lineplot[$i]);
+      $i++;
+    }
+
+    $labelArrayLaps = array();
+    for($i=0; $i<$maxLapNumber*$numberSplits; $i++) {
+      $labelArrayLaps[] = round($i/$numberSplits);
+    }
+
+		$graph->xscale-> ticks->Set($numberSplits*2, $numberSplits);
+    $graph->xaxis->SetTickLabels($labelArrayLaps);
+    $graph->yaxis->SetLabelFormatCallback("_league_graph_time_to_seconds");
+
+    $graph->title->Set('Race time progress');
+    $graph->xaxis->SetPos('min');
+    $graph->AddLine(new PlotLine(HORIZONTAL,0,"darkgray",1)); 
+    $graph->xgrid->Show(true, false);
+    $graph->ygrid->Show(true,true);
+    $graph->setBox(true, "black", 1);
+    $graph->Stroke();
+    
+}
+
+function league_graph_detailsSelect($id) {
+  $id = intval($id);
+  if (! $id > 0) {
+    return "Unknown Error";
+  }
+  
+  $query = "SELECT drivers.id, drivers.lfsworld_name " .
+    " FROM {league_drivers} AS drivers" . 
+    " WHERE drivers.raceEntry_id = %d";
+  
+    $result = db_query($query, $id);
+   
+    $names = league_get_profile_names();
+    $options = "";
+    while ($row = db_fetch_object($result)) {
+     $lfsworldName  = strtolower($row->lfsworld_name);
+     $name = $names[$lfsworldName];
+     if ($name == '') {
+       $name = $lfsworldName;
+     }
+     $options .= '<option value="' . $row->id . '" >' . $name . '</option>';
+    }
+    
+    $content .='<script Language="JavaScript"><!--
+    function league_graph_detailsSelect()
+        {
+          window.location = "?q=league_graph/detailsLarge/" +  document.getElementById("driver1").value + "/" +  document.getElementById("driver2").value;
+        }
+    --></script>';
+    
+    
+    $content .= '<form action="" name="detailsSelect"><select name="driver1" id="driver1" size="1">';
+    $content .= $options;
+    $content .= '</select> VS <select name="driver2" id="driver2" size="1">';
+    $content .= $options;
+    $content .= '</select><input type="button" value="Show" onclick="javascript:league_graph_detailsSelect()"></form>';
+   
+  return $content;
+}
+
+function league_graph_detailsLarge($id1, $id2) {
+  league_graph_details($id1, $id2, 1024,786);
+}
+
+function league_graph_details($id1, $id2, $width=640, $height = 480) {
+
+  $id1 = intval($id1);
+  $id2 = intval($id2);
+
+  
+  $driverDetail1 = league_get_race_driver_detail_data($id1);
+  $driverDetail2 = league_get_race_driver_detail_data($id2);
+  
+  $query = "select id, lfsworld_name, raceEntry_id from {league_drivers} where id in (%d, %d)";
+  $result = db_query($query, $id1, $id2);
+ 
+  $names = league_get_profile_names();
+  
+  $driverNames = array();
+  $raceEntryIds = array();
+  while ($row = db_fetch_object($result)) {
+    $driverNames[$row->id] = strtolower($row->lfsworld_name);
+    $raceEntryIds[] = $row->raceEntry_id;
+  }
+    
+  if ($raceEntryIds[0] != $raceEntryIds[1]) {
+    echo "Cannot create graph";
+    return;
+  }
+  
+  $laps1 = $driverDetail1['laps'];
+  $laps2 = $driverDetail2['laps'];
+  
+  $time = array();
+  
+  $averageLap = $driverDetail1['averageLap'];
+  if ($averageLap > $driverDetail2['averageLap']) {
+    $averageLap = $driverDetail2['averageLap'];
+  }
+  
+  $driverOverall1 = array();
+  $driverOverall1[0] = $laps1[0];
+  for ($i = 1; $i < count($laps1); $i++) {
+    $driverOverall1[$i] = $laps1[$i]['time'] + $driverOverall1[$i-1];
+  }
+  
+  $driverOverall2 = array();
+  $driverOverall2[0] = $laps2[0];
+  for ($i = 1; $i < count($laps2); $i++) {
+    $driverOverall2[$i] = $laps2[$i]['time'] + $driverOverall2[$i-1];
+  }
+  
+  $count = count($laps1);
+  if ($count > count($laps2)) {
+    $count = count($laps2);
+  }
+
+  $lapTimes1 = array();
+  $lapTimes2 = array();
+  $labelArrayLaps = array();
+  $yMax = 0;
+  $yMin = 0;
+  for ($i = 0 ; $i < $count; $i++) {
+    $time[$i] = $laps1[$i]['time'] - $laps2[$i]['time'];
+    $lapTimes1[] = $averageLap * $i - $driverOverall1[$i]; 
+    $lapTimes2[] = $averageLap * $i - $driverOverall2[$i]; 
+    $labelArrayLaps[] = $i+1;
+    
+    if ($yMax < $time[$i]) {
+      $yMax = $time[$i];
+    }
+
+    if ($yMax < $lapTimes1[$i-1]) {
+      $yMax = $lapTimes1[$i-1];
+    }
+    if ($yMax < $lapTimes2[$i-1]) {
+      $yMax = $lapTimes2[$i-1];
+    }
+    
+    if ($yMin > $time[$i]) {
+      $yMin = $time[$i];
+    }
+    
+    if ($yMin > $lapTimes1[$i-1]) {
+      $yMin = $lapTimes1[$i-1];
+    }
+    if ($yMin > $lapTimes2[$i-1]) {
+      $yMin = $lapTimes2[$i-1];
+    }
+    
+  }
+   
+  $graph  = new Graph($width, $height,"auto", 60);     
+  $graph->img->SetMargin(40,30,45,30);
+  $graph->SetScale("intint", round($yMin-1000, -3), $yMax+1000 ,0, $count-1 ); 
+  $graph->SetMarginColor('white');
+  
+  $plot  = new LinePlot($time); 
+  $plot->SetFillColor("orange");
+  $plot->SetLegend(utf8_decode('Lap time difference'));
+  $plot->SetColor("orange");
+  $graph->Add($plot);
+  
+  $plotTime1 = new LinePlot($lapTimes1);
+  $plotTime1->SetColor('blue'); 
+  $plotTime1->SetLegend(utf8_decode($names[$driverNames[$id1]]->name));
+  $graph->Add($plotTime1);
+  
+  $plotTime2 = new LinePlot($lapTimes2);
+  $plotTime2->SetColor('darkred'); 
+  $plotTime2->SetLegend(utf8_decode($names[$driverNames[$id2]]->name));
+  $graph->Add($plotTime2);
+  
+  
+  $graph->title->Set(utf8_decode($names[$driverNames[$id1]]->name)  . " VS. " . utf8_decode($names[$driverNames[$id2]]->name));
+  $graph->xaxis->title->Set("Laps");
+  $graph->yaxis->title->Set("Time");
+
+  $graph->xaxis->SetTickLabels( $labelArrayLaps);
+  
+  $graph->AddLine(new PlotLine(HORIZONTAL,0,"black",1)); 
+  $graph->xgrid->Show(true);
+  $graph->ygrid->Show(true,true);
+  $graph->setBox(true, "black", 1);
+  $graph->yaxis->SetLabelFormatCallback("_league_graph_time_to_seconds");
+  $graph->legend->Pos(0.07,0.8,"left" ,"top");
+  
+  $graph->Stroke();
+   
+}
+
+
+function _league_graph_time_to_seconds($value) {
+  return $value / 1000;
+}
+
+function _league_graph_minus_one($value) {
+  return $value - 1;
+}
+
+function _league_graph_negate($value) {
+    return round(-$value);
+}
+
+function league_graph($id) {
+  
+  //$id = intval(substr($_GET['q'], strlen('league_graph/')));
+  
+  if (module_exist('league') && $id) {
+    include_once(drupal_get_path('module', 'league') .'/league-driver.inc');
+    $driverDetail = league_get_race_driver_detail_data($id);
+  
+    $ydata = array();
+    $ydata2 = array();
+    $laps = $driverDetail['laps'];
+    $averageLap = $driverDetail['averageLap'];
+    $i=1;
+    foreach($laps as $lap)
+    {
+      $ydata[] = ($averageLap-$lap['time'])/10000;
+      $ydata2[] = -$lap['position'];
+    }
+    // Some data 
+    //$ydata  = array(11,3, 8,12,5 ,1,9, 13,5,7 ); 
+
+    // Create the graph. These two calls are always required 
+    $graph  = new Graph(700, 500,"auto", 60);     
+    $graph->img->SetMargin(40,140,45,40);
+    //$graph->SetScale( "linlin", 0,0,0, count($laps)); 
+    
+    $graph->SetShadow();
+    
+    
+    //$graph->xaxis->SetTextLabelInterval(5);
+    //$graph->ygrid->Show (true,true);
+    //$graph->xgrid->Show (true,true);
+    
+    $graph->title->Set ('Driver lap times');
+    //$graph->xaxis-> title->Set("Time"); 
+    //$graph->yaxis-> title->Set("Laps");
+    //$graph->yaxis->SetLabelFormatCallback("_cb_negate");
+    //$graph->xaxis->SetTickLabels($datax);    
+
+    //$graph->SetAxisStyle(AXSTYLE_BOXOUT);
+    //$graph->xaxis->SetTitleSide(SIDE_BOTTOM); 
+
+
+    // Create the linear plot 
+    $lineplot = new LinePlot($ydata); 
+    $lineplot->SetColor("blue");  
+    $graph->Add($lineplot); 
+    
+    $lineplot2 = new LinePlot($ydata2); 
+    $lineplot2->SetColor("red"); 
+    $graph->AddY(0,$lineplot2); 
+
+    $lineplot->SetLegend("Lap time"); 
+    $lineplot2 ->SetLegend("Position");
+    $graph ->legend->Pos( 0.02,0.5,"right" ,"center");   
+    // Display the graph 
+    
+    $graph->SetScale("textlin", 0,0,0, count($laps)-1  ); 
+    $graph->SetYScale(0,"lin", -22, 1);
+
+    //$graph->xaxis->scale->ticks->Set(2);
+    //$graph->ynaxis[0]->scale->ticks->Set(1);
+    //$graph->ynaxis[1]->SetLabelFormatCallback('league_graph_invert');
+    
+    
+    $graph->Stroke();
+    
+  } else {
+    echo "Unable to create graph";
+  }
+}
+
+class LapData {
+	public $time;
+	public $lap;
+	public $split;
+	
+	
+	public function __construct($time = 0, $lap = 0, $split = 0) {
+		$this->time = $time;
+		$this->lap = $lap;
+		$this->split = $split;
+	}
+	
+	public function __toString() {
+		$result = "LapData[";
+		$result .= "time: " . $this->time . ", ";
+		$result .= "lap: " . $this->lap . ", ";
+		$result .= "split: " . $this->split;
+		$result .= "]";
+		return $result;
+	}
+}
+
+?>

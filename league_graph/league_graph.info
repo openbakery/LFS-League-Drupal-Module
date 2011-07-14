@@ -1,0 +1,4 @@
+name = League Graph
+description = "The league module displays statistic graphics for the leage module"
+version = 5.1
+dependencies = league

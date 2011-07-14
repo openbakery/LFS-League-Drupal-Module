@@ -1,0 +1,13 @@
+place the following files from jpgraph here:
+
+gd_image.inc.php
+jpg-config.inc
+jpgraph.php
+jpgraph_gradient.php
+jpgraph_line.php
+jpgraph_plotmark.inc
+lang
+lang/de.inc.php
+lang/en.inc.php
+lang/prod.inc.php
+
