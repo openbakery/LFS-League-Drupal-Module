@@ -1,0 +1,285 @@
+# LANGUAGE translation of Drupal (league.module)
+# Copyright YEAR NAME <EMAIL@ADDRESS>
+# No version information was available in the source files.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"POT-Creation-Date: 2006-09-30 11:20+0200\n"
+"PO-Revision-Date: YYYY-mm-DD HH:MM+ZZZZ\n"
+"Last-Translator: NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <EMAIL@ADDRESS>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;\n"
+
+#: league.module:14;23;622;649
+msgid "League"
+msgstr ""
+
+#: league.module:23
+msgid "League overview"
+msgstr ""
+
+#: league.module:28;328
+msgid "Rules"
+msgstr ""
+
+#: league.module:33
+msgid "Add league rules"
+msgstr ""
+
+#: league.module:39
+msgid "Delete league rules"
+msgstr ""
+
+#: league.module:45
+msgid "Edit league rules"
+msgstr ""
+
+#: league.module:51;212
+msgid "Race"
+msgstr ""
+
+#: league.module:56
+msgid "Add race"
+msgstr ""
+
+#: league.module:62
+msgid "Delete race"
+msgstr ""
+
+#: league.module:68
+msgid "Upload gstats file"
+msgstr ""
+
+#: league.module:73
+msgid "Add a new league"
+msgstr ""
+
+#: league.module:79
+msgid "Delete a league"
+msgstr ""
+
+#: league.module:85
+msgid "Edit a league"
+msgstr ""
+
+#: league.module:91;187;754
+msgid "Standings"
+msgstr ""
+
+#: league.module:97
+msgid "Rookie Standings"
+msgstr ""
+
+#: league.module:103;754
+msgid "Races"
+msgstr ""
+
+#: league.module:109
+msgid "Delete results"
+msgstr ""
+
+#: league.module:115
+msgid "Results"
+msgstr ""
+
+#: league.module:121
+msgid "Driver Detail"
+msgstr ""
+
+#: league.module:134;137
+msgid "Manage LFS Leagues"
+msgstr ""
+
+#: league.module:154
+msgid "League displayed in block"
+msgstr ""
+
+#: league.module:156
+msgid "Select the league that should be displayed in the block."
+msgstr ""
+
+#: league.module:160
+msgid "Number of results displayed in block"
+msgstr ""
+
+#: league.module:162
+msgid "The number of results that should be displayed in the block."
+msgstr ""
+
+#: league.module:167
+msgid "Profile field name for the lfsworld entry"
+msgstr ""
+
+#: league.module:169
+msgid "The profile field name the of the lfsworld name"
+msgstr ""
+
+#: league.module:174
+msgid "Pattern to replace the lfs world name."
+msgstr ""
+
+#: league.module:176
+msgid "The profile field names must here be in {}"
+msgstr ""
+
+#: league.module:223;860
+msgid "Server"
+msgstr ""
+
+#: league.module:230
+msgid "Sprint"
+msgstr ""
+
+#: league.module:239
+msgid "File to upload"
+msgstr ""
+
+#: league.module:240
+msgid "Click \"Browse...\" to select a file to upload."
+msgstr ""
+
+#: league.module:244;359;525
+msgid "Save"
+msgstr ""
+
+#: league.module:276;316;742
+msgid "Description"
+msgstr ""
+
+#: league.module:276;341;742
+msgid "Homepage"
+msgstr ""
+
+#: league.module:286;469
+msgid "Edit"
+msgstr ""
+
+#: league.module:286;414;468;572;624;712
+msgid "Delete"
+msgstr ""
+
+#: league.module:335
+msgid "Servers"
+msgstr ""
+
+#: league.module:348
+msgid "Rookies"
+msgstr ""
+
+#: league.module:369
+msgid "The servers must be a numeric value"
+msgstr ""
+
+#: league.module:411
+msgid "Are you sure you want to delete this league entry?"
+msgstr ""
+
+#: league.module:414;572;712
+msgid "Cancel"
+msgstr ""
+
+#: league.module:463
+msgid "Main race points"
+msgstr ""
+
+#: league.module:464
+msgid "Main race fastest lap"
+msgstr ""
+
+#: league.module:465
+msgid "Sprint race points"
+msgstr ""
+
+#: league.module:466
+msgid "Sprint race fastest lap"
+msgstr ""
+
+#: league.module:467
+msgid "Pole position points"
+msgstr ""
+
+#: league.module:488
+msgid "Points main race"
+msgstr ""
+
+#: league.module:495
+msgid "Points main race fastest lap"
+msgstr ""
+
+#: league.module:502
+msgid "Points sprint race"
+msgstr ""
+
+#: league.module:508
+msgid "Points main sprint fastest lap"
+msgstr ""
+
+#: league.module:514
+msgid "Points for the pole position"
+msgstr ""
+
+#: league.module:569
+msgid "Are you sure you want to delete this league rules entry?"
+msgstr ""
+
+#: league.module:623;860
+msgid "Date"
+msgstr ""
+
+#: league.module:656
+msgid "date"
+msgstr ""
+
+#: league.module:662
+msgid "time"
+msgstr ""
+
+#: league.module:668
+msgid "Add"
+msgstr ""
+
+#: league.module:679
+msgid "This must be a valid date (YYYY-MM-DD)"
+msgstr ""
+
+#: league.module:681
+msgid "This must be a valid time (HH:MM)."
+msgstr ""
+
+#: league.module:709
+msgid "Are you sure you want to delete this race entry?"
+msgstr ""
+
+#: league.module:777;815
+msgid "Points"
+msgstr ""
+
+#: league.module:860
+msgid "Track"
+msgstr ""
+
+#: league.module:860
+msgid "Weather"
+msgstr ""
+
+#: league.module:860
+msgid "Wind"
+msgstr ""
+
+#: league.module:145
+msgid "access content"
+msgstr ""
+
+#: league.module:145
+msgid "access administration pages"
+msgstr ""
+
+#: league.module:0
+msgid "league"
+msgstr ""
+

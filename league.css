@@ -1,0 +1,84 @@
+table.league {
+  margin: 1em 2em;
+}
+
+.league th {
+    text-align: left;
+    background-color: #ccc;
+    color: black;
+    margin: 0;
+    padding: 0.3em;
+    border: 1px solid #aaa;
+}
+
+.league td {
+    margin: 0;
+    padding: 0.3em;
+    border: 1px solid #aaa;
+}
+
+.league-even td {
+    background: #eee;
+}
+
+.blockinner .league-even td {
+  background: none;
+}
+
+.league-label {
+    font-weight: bold;
+    width: 10em;
+    padding-top: 0.3em;
+    text-align: right;
+    float: left;
+}
+
+.league-warning {
+    border: 1px solid #fff;
+    padding: 0.5em;
+    background-color: #ff0000;
+}
+
+.league-info {
+    border: 1px solid #fff;
+    padding: 0.5em;
+    background-color: #ffff99;   
+}
+
+.league-item {
+    /* width: 100%; */
+    padding: 0.2em;
+}
+
+.league-item .league-label {
+    padding-top: 0em;
+    padding-right: 0.5em;
+}
+
+.league-even .league-gain {
+  background-color: #55ff55;
+}
+
+.league-even .league-loss {
+  background-color: #ff8888;
+}
+
+.league-odd .league-gain {
+  background-color: #88ff88;
+}
+
+.league-odd .league-loss {
+  background-color: #ffaaaa;
+}
+
+.league-highlight {
+  background-color: #87cefa;
+}
+
+.league-even td, .league-odd td, .league-highlight td {
+  padding: 0.1em 0.3em;
+}
+
+.league-standings-block {
+ font-size: 85%;
+}

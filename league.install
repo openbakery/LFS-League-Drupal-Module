@@ -1,0 +1,189 @@
+<?php
+
+function league_install() {
+	switch ($GLOBALS['db_type']) {
+		case 'mysql':
+		case 'mysqli':
+		case 'pgsql':
+      
+		db_query("CREATE TABLE {league_drivers} (
+			id int(11) NOT NULL auto_increment,
+			raceEntry_id int(11) NOT NULL default '0',
+			uid int(11) default NULL,
+			lfsworld_name text NOT NULL,
+			nickname text NOT NULL,
+			starting_position int(11) default NULL,
+			car text,
+			plate text,
+			team_id int(11) default NULL,
+			PRIMARY KEY  (id),
+			KEY raceEntry_id_index (raceEntry_id),
+			KEY uid_index (uid)
+		)");
+				
+		db_query("CREATE TABLE {league_flags} (
+			id int(11) NOT NULL auto_increment,
+			driver_id int(11) NOT NULL,
+			raceEntry_id int(11) NOT NULL,
+			lap_number int(11) NOT NULL,
+			type int(11) NOT NULL,
+			duration int(11) NOT NULL,
+			PRIMARY KEY  (id)
+		)");
+
+		db_query("CREATE TABLE {league_laps} (
+			id int(11) NOT NULL auto_increment,
+			driver_id int(11) NOT NULL default '0',
+			raceEntry_id int(11) NOT NULL default '0',
+			number int(11) NOT NULL default '0',
+			time bigint(11) default NULL,
+			split1 bigint(11) default NULL,
+			split2 bigint(11) default NULL,
+			split3 bigint(11) default NULL,
+			split4 bigint(11) default NULL,
+			overallTime bigint(11) default NULL,
+			position int(11) default NULL,
+			pit int(1) default NULL,
+			penalty int(11) default NULL,
+			numberStops int(11) default NULL,
+			rearLeft int(11) default NULL,
+			rearRight int(11) default NULL,
+			frontLeft int(11) default NULL,
+			frontRight int(11) default NULL,
+			work int(11) default NULL,
+			pitStopTime int(11) default NULL,
+			takeOverNewUserName text,
+			oldPenalty int(11) default NULL,
+			newPenalty int(11) default NULL,
+			PRIMARY KEY  (id),
+			KEY driver_id_index (driver_id),
+			KEY raceEntry_id_index (raceEntry_id)
+		)");
+
+		db_query("CREATE TABLE {league_leagues} (
+			id int(11) NOT NULL auto_increment,
+			name text NOT NULL,
+			description text NOT NULL,
+			servers int(11) NOT NULL default '1',
+			homepage text,
+			rules_id int(11) default NULL,
+			rookies text NOT NULL,
+			number_counting_results int(11) default NULL,
+			name_pattern text,
+			block_name_pattern text,
+			PRIMARY KEY  (id),
+			KEY rules_id_index (rules_id)
+		)");
+
+		db_query("CREATE TABLE {league_races} (
+			id int(11) NOT NULL auto_increment,
+			league_id int(11) NOT NULL default '0',
+			name text NOT NULL,
+			date datetime default NULL,
+			PRIMARY KEY  (id),
+			KEY league_id_index (league_id)
+		)");
+
+		db_query("CREATE TABLE {league_races_entries} (
+			id int(11) NOT NULL auto_increment,
+			race_id int(11) NOT NULL default '0',
+			track char(3) NOT NULL default '',
+			laps int(11) default NULL,
+			qualifing_minutes int(11) default NULL,
+			weather int(11) default NULL,
+			wind int(11) default NULL,
+			type int(11) default NULL,
+			server int(11) default NULL,
+			PRIMARY KEY  (id),
+			KEY race_id_index (race_id),
+			KEY laps_index (laps)
+		)");
+
+		db_query("CREATE TABLE {league_results} (
+			id int(11) NOT NULL auto_increment,
+			raceEntry_id int(11) NOT NULL default '0',
+			driver_id int(11) NOT NULL default '0',
+			position int(11) NOT NULL default '0',
+			race_time bigint(11) default NULL,
+			fastest_lap bigint(11) default NULL,
+			laps bigint(11) default NULL,
+			pitstops int(11) default NULL,
+			flags int(11) default NULL,
+			confirmation_flags int(11) default NULL,
+			penalty int(11) default NULL,
+			PRIMARY KEY  (id),
+			KEY driver_id_index (driver_id),
+			KEY raceEntry_id_index (raceEntry_id)
+		)");
+
+		db_query("CREATE TABLE {league_rules} (
+			id int(11) NOT NULL auto_increment,
+			main_race_points text NOT NULL,
+			main_race_fastest_lap int(11) default '0',
+			sprint_race_points text,
+			sprint_race_fastest_lap int(11) default '0',
+			name text NOT NULL,
+			poleposition_points int(11) default '0',
+			sprint_poleposition_points int(11) default '0',
+			PRIMARY KEY  (id)
+		)");
+
+		db_query("CREATE TABLE {league_standingrule} (
+			id int(11) NOT NULL auto_increment,
+			league_id int(11) NOT NULL,
+			name text NOT NULL,
+			heading text NOT NULL,
+			description text NOT NULL,
+			lfsworld_name_filter text NOT NULL,
+			car_filter text NOT NULL,
+			track_filter text NOT NULL,
+			PRIMARY KEY  (id)
+		)");
+
+		db_query("CREATE TABLE {league_teams} (
+			id int(11) NOT NULL auto_increment,
+			name text NOT NULL,
+			league_id int(11) NOT NULL,
+			PRIMARY KEY  (id)
+		)");
+
+		db_query("CREATE TABLE {league_teams_drivers} (
+			id int(11) NOT NULL auto_increment,
+			team_id int(11) NOT NULL,
+			lfsworld_name text NOT NULL,
+			active int(1) NOT NULL,
+			PRIMARY KEY  (id)
+		)");
+      
+      
+  }
+}
+
+function league_uninstall() {
+	db_query("DROP TABLE {league_drivers}");
+	db_query("DROP TABLE {league_flags}");
+	db_query("DROP TABLE {league_laps}");
+	db_query("DROP TABLE {league_leagues}");
+	db_query("DROP TABLE {league_races}");
+	db_query("DROP TABLE {league_races_entries}");
+	db_query("DROP TABLE {league_results}");
+	db_query("DROP TABLE {league_rules}");
+	db_query("DROP TABLE {league_standingrule}");
+	db_query("DROP TABLE {league_teams}");
+	db_query("DROP TABLE {league_teams_drivers}");
+
+  variable_del('league_block_display');
+  variable_del('league_block_size');
+  variable_del('league_block_title');
+  variable_del('league_profile_lfsworldname');
+  variable_del('league_profile_replace_list');
+}
+
+/*
+function league_update_12() {
+  $items = array();
+  $items[] = update_sql("ALTER TABLE {league_results} ADD penalty int(11)");
+  return $items;
+}
+*/
+?>
