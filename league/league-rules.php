@@ -1,8 +1,15 @@
 <?php
-
+/**
+ * @league-rules
+ * file that holds functions for the league rules
+ *
+ * 
+ * 
+ */
 function league_admin_leagues_rules() {
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
   
   $content = '<a href="?q=admin/league/rules/add">Add new rules</a><p/>';
@@ -25,7 +32,7 @@ function league_admin_leagues_rules() {
 
    $i=0;
    while ($row = db_fetch_object($result)) {
-  	 $content .= "<tr>";
+     $content .= "<tr>";
      $content .= '<td>' . $row->name. '</td>';
      $content .= '<td>' .  _league_string_crop($row->main_race_points) . '</td>';
      $content .= '<td>' .  $row->main_race_fastest_lap . '</td>';
@@ -46,14 +53,14 @@ function league_admin_leagues_rules_add($id = NULL) {
 
 function league_admin_leagues_rules_form($id = NULL) {
 
-	if (isset($id)) {
-		$values = league_admin_leagues_rules_values($id);
+  if (isset($id)) {
+    $values = league_admin_leagues_rules_values($id);
 
-		if ($_POST['op'] == t('Delete')) {
+    if ($_POST['op'] == t('Delete')) {
       drupal_goto('admin/league/rules/delete/'. $id);
     }
 
-	}
+  }
 
  $form = array();
 
@@ -103,27 +110,29 @@ function league_admin_leagues_rules_form($id = NULL) {
     '#default_value' => $values['sprint_poleposition_points']);
 
   if (isset($id)) {
-	   $form['delete'] = array('#type' => 'submit',
-	      '#value' => t('Delete'),
-	      '#weight' => 30,
-	   );
-	   $form['id'] = array('#type' => 'value', '#value' => $values['id']);
-	}
+     $form['delete'] = array('#type' => 'submit',
+        '#value' => t('Delete'),
+        '#weight' => 30,
+     );
+     $form['id'] = array('#type' => 'value', '#value' => $values['id']);
+  }
 
   $form['submit'] = array(
     '#type' => 'submit', 
     '#value' => t('Save'),
     '#default_value' => $values['name']);
-	
-	return $form;
+  
+  return $form;
 }
 
 
-function league_admin_leagues_rules_form_submit($form_id, $edit) {
+function league_admin_leagues_rules_form_submit($form, &$form_state) {
   global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
+  $edit = $form_state['values'];
   
   if ($edit['id'] > 0) {
     
@@ -145,11 +154,11 @@ function league_admin_leagues_rules_form_submit($form_id, $edit) {
      " VALUES('', '%s', %d, '%s', %d, '%s', %d, %d)", $edit['main_race_points'], $edit['main_race_fastest_lap'], $edit['sprint_race_points'], $edit['sprint_race_fastest_lap'], $edit['name'], $edit['poleposition_points'], $edit['sprint_poleposition_points']); 
  }
   
-  return "admin/league/rules";
+  $form_stage['redirect'] = 'admin/league/rules';
 }
 
 function league_admin_leagues_rules_delete($id) {  
-	if (!isset($id)) {
+  if (!isset($id)) {
     drupal_not_found();
     return;
   }
@@ -164,16 +173,17 @@ function league_admin_leagues_rules_delete($id) {
     t('Delete'),
     t('Cancel')
   );
-	
+  
 }
 
-function league_admin_leagues_rules_delete_submit($form_id, $form_values) {
+function league_admin_leagues_rules_delete_submit($form, &$form_state) {
   
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
   
-  db_query("DELETE FROM {league_rules} WHERE id = %d", $form_values['id']);
+  db_query("DELETE FROM {league_rules} WHERE id = %d", $form_state['values']['id']);
 
   return 'admin/league/rules';
 }

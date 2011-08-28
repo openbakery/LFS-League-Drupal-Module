@@ -1,20 +1,26 @@
 <?php
-
+/**
+ * @league-teams
+ * file that holds functions to upload gstats files
+ *
+ * 
+ * 
+ */
 
 $drivers = array();
 $raceEntryId = 0;
 
 function league_admin_upload_form() {
 
-	$result = db_query("SELECT leagues.name AS league, races.name AS race, races.id AS id, leagues.servers AS servers " .
+  $result = db_query("SELECT leagues.name AS league, races.name AS race, races.id AS id, leagues.servers AS servers " .
   "FROM {league_races} AS races, {league_leagues} AS leagues WHERE races.league_id = leagues.id");
   $racesArray = array();
   while ($row = db_fetch_object($result)) {
     $racesArray[$row->id] = $row->league . ' - ' . $row->race;
-		$servers = $row->servers;
+    $servers = $row->servers;
   }
 
- 	$form['race'] = array(
+   $form['race'] = array(
     '#type' => 'select', 
     '#title' => t('Race'),
     '#required' => TRUE,
@@ -33,11 +39,11 @@ function league_admin_upload_form() {
     '#options' => $serversArray);   
 
 
-		$form['type_options'] = array(
-			'#type' => 'value',
-			'#value' => _league_race_entry_types()
-		);
-		
+    $form['type_options'] = array(
+      '#type' => 'value',
+      '#value' => _league_race_entry_types()
+    );
+    
   $form['type'] = array(
     '#type' => 'select', 
     '#title' => t('Type'),
@@ -59,10 +65,10 @@ function league_admin_upload_form() {
     '#value' => t('Save'),
     '#default_value' => $values['name']);
 
-	return $form;
+  return $form;
 }
 
-function league_admin_upload_form_submit($form_id, $edit) {
+function league_admin_upload_form_submit($form, &$form_state) {
   $fileinfo = file_check_upload('filename');
 
   if ($fileinfo) {
@@ -71,7 +77,10 @@ function league_admin_upload_form_submit($form_id, $edit) {
   
   $uploadfile =  file_directory_path() . "/" . $fileinfo->filename;
   
-  $raceEntryId = league_insert_stats_data($uploadfile, $edit['race'], $edit['server'], $edit['type']['type_options']); 
+  $raceEntryId = league_insert_stats_data($uploadfile, 
+    $form_state['values']['race'], 
+    $form_state['values']['server'], 
+    $form_state['values']['type']['type_options']); 
   //echo "raceId: " . $raceId;
   return "league/results/" . $raceEntryId;
 }
@@ -152,10 +161,10 @@ function _league_insert_lap($line = "", $raceId, $server, $type) {
    #number;time;split1;split2;split3;split4;totalTime;position;pit;
    #penalty;numberStops;rearLeft;rearRight;frontLeft;frontRight;work;pitStopTime;takeOverNewUserName;oldPenalty;newPenalty
    
-	if ($type == 2) {
-		// is qualifying
-		return;
-	}
+  if ($type == 2) {
+    // is qualifying
+    return;
+  }
 
   global $drivers;
   global $raceEntryId;
@@ -163,23 +172,23 @@ function _league_insert_lap($line = "", $raceId, $server, $type) {
   $token = explode(";", $line);
   $driverId = $drivers[$token[0]];
   
-	if (trim($token[9]) == 'true') {
-		$pit = 1;
-	} else {
-		$pit = 0;
-	}
-	
-	if ($token[10] == '') $token[10] = 0;
-	if ($token[11] == '') $token[11] = 0;
-	if ($token[12] == '') $token[12] = 255;
-	if ($token[13] == '') $token[13] = 255;
-	if ($token[14] == '') $token[14] = 255;
-	if ($token[15] == '') $token[15] = 255;
-	if ($token[16] == '') $token[16] = 0;
-	if ($token[17] == '') $token[17] = 0;
-	if ($token[19] == '') $token[19] = 0;
-	if ($token[20] == '') $token[20] = 0;
-	
+  if (trim($token[9]) == 'true') {
+    $pit = 1;
+  } else {
+    $pit = 0;
+  }
+  
+  if ($token[10] == '') $token[10] = 0;
+  if ($token[11] == '') $token[11] = 0;
+  if ($token[12] == '') $token[12] = 255;
+  if ($token[13] == '') $token[13] = 255;
+  if ($token[14] == '') $token[14] = 255;
+  if ($token[15] == '') $token[15] = 255;
+  if ($token[16] == '') $token[16] = 0;
+  if ($token[17] == '') $token[17] = 0;
+  if ($token[19] == '') $token[19] = 0;
+  if ($token[20] == '') $token[20] = 0;
+  
   $result = db_query("INSERT INTO {league_laps} VALUES('',%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d, %d)",
     $driverId,
     $raceEntryId,
@@ -209,10 +218,10 @@ function _league_insert_lap($line = "", $raceId, $server, $type) {
 function _league_insert_flags($line = "", $raceId, $server, $type) {
   #lfsworldName;lapNumber ;type;duration
 
-	if ($type == 2) {
-		// is qualifying
-		return;
-	}
+  if ($type == 2) {
+    // is qualifying
+    return;
+  }
   
   global $drivers;
   global $raceEntryId;
@@ -236,29 +245,29 @@ function league_insert_stats_data($uploadfile, $raceId, $server, $type) {
 
   global $raceEntryId;
   
-	$SECTION_NAME = "RACECONTROL-SECTION:";
+  $SECTION_NAME = "RACECONTROL-SECTION:";
 
 
   $lines = file($uploadfile);
   
   #print_r($lines);
-	#echo  "<br><br><br>" . $SECTION_NAME . "<br><br><br>";
+  #echo  "<br><br><br>" . $SECTION_NAME . "<br><br><br>";
   
 // Loop through our array, show HTML source as HTML source; and line numbers too.
   foreach ($lines as $line_num => $line) {
       
     static $insertFunction = '_league_insert_nothing';
     if (strlen($line) > 0 && $line[0] != '#') {
-      	
-			#echo $line . "<br>";
+        
+      #echo $line . "<br>";
       $gstatsPosition = strpos($line, $SECTION_NAME);
-			#echo $gstatsPosition . "<br>";
+      #echo $gstatsPosition . "<br>";
       if ($gstatsPosition === false) {
         #echo $insertFunction . "->" . $line . "<br>";
         $insertFunction($line, $raceId, $server, $type);
       } else {
         $gstatsSection = trim(substr($line, strlen($SECTION_NAME), strlen($line)));
-				#echo $gstatsSection . "<br>";
+        #echo $gstatsSection . "<br>";
         if ($gstatsSection == "RACE") {
           $insertFunction = '_league_insert_race';
         } else if ($gstatsSection == "DRIVER") {

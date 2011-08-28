@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * @league-resulsts
+ * file that holds functions to calculate the results
+ *
+ * 
+ * 
+ */
+ 
 function league_get_race_result_content(&$content, $id, $names) {
 
   if (!$names) {
@@ -11,30 +18,30 @@ function league_get_race_result_content(&$content, $id, $names) {
   if ($id == "")
     return "";
   
-	$race = _league_get_race($id);
-	
-	if ($race->type == 2) {
-		$content .= _league_show_qualifying_result($id, $names);
-	} else {
-		$content .= _league_show_race_result($race, $id, $names);
-	}
-	return $race->type;
+  $race = _league_get_race($id);
+  
+  if ($race->type == 2) {
+    $content .= _league_show_qualifying_result($id, $names);
+  } else {
+    $content .= _league_show_race_result($race, $id, $names);
+  }
+  return $race->type;
 }
 
 function _league_show_qualifying_result($id, $names) {
-	
-	$content .= '<table class="league" >';
+  
+  $content .= '<table class="league" >';
   $content .= '<tr><th>' . t('Pos') . '</th><th>' . t('Driver') . '</th><th>' . t('Car') . '</th><th>' . t('Time');
   $content .= '</th><th>' . t('Gap') . '</th></tr>';
 
-	$query = "SELECT results.*, drivers.id as driver_id, drivers.lfsworld_name, drivers.car, drivers.starting_position " .
+  $query = "SELECT results.*, drivers.id as driver_id, drivers.lfsworld_name, drivers.car, drivers.starting_position " .
     "FROM {league_results} AS results, {league_drivers} AS drivers " .
     "WHERE results.raceEntry_id = %d  AND drivers.id = results.driver_id ORDER BY results.position";
         
   $result = db_query($query, $id);
 
-	$i = 1;
-	while ($row = db_fetch_object($result)) {
+  $i = 1;
+  while ($row = db_fetch_object($result)) {
   
     if ( ($i%2) == 0) {
       $tdClass = "league-even";
@@ -57,11 +64,11 @@ function _league_show_qualifying_result($id, $names) {
       $tdClass = "league-highlight";
     }
     
-		if ($i == 1) {
+    if ($i == 1) {
       $fastestTime = $row->fastest_lap;
     } else {
-			$gap = league_get_time(($row->fastest_lap)-$fastestTime, true);
-		}
+      $gap = league_get_time(($row->fastest_lap)-$fastestTime, true);
+    }
     
     $content .= sprintf('<tr class="%s"><td>%d</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td>' . "\n",
       $tdClass,
@@ -69,7 +76,7 @@ function _league_show_qualifying_result($id, $names) {
       $name->name,
       _league_get_short_car_name($row->car),
       league_get_time(intval($row->fastest_lap)),
-			$gap
+      $gap
       );
 
       
@@ -79,18 +86,18 @@ function _league_show_qualifying_result($id, $names) {
 
 
 
-	$content .= '</table>';
-	return $content;
+  $content .= '</table>';
+  return $content;
 }
 
-	
+  
 function _league_show_race_result($race, $id, $names) {
-	
-	$raceResult = _league_get_race_result($race, $id, $names);
-	$content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
-	$content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
-	$content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Duration:') ."</span>" . $race->laps . "</div>";
-	$content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Conditions:') ."</span>" . league_get_wind($race->wind) . "</div>";
+  
+  $raceResult = _league_get_race_result($race, $id, $names);
+  $content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
+  $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
+  $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Duration:') ."</span>" . $race->laps . "</div>";
+  $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Conditions:') ."</span>" . league_get_wind($race->wind) . "</div>";
   
 
   $content .= '<p/>';
@@ -98,7 +105,7 @@ function _league_show_race_result($race, $id, $names) {
   $content .= '<tr><th>' . t('Pos') . '</th><th>' . t('Driver') . '</th><th>' . t('Car') . '</th><th>' . t('Race Time');
   $content .= '</th><th>' . t('Fastest Lap') . '</th><th>' . t('Laps') . '</th><th>' . t('Pitstops') . '</th><th>' . t('Points') . '</th><th>' . t('Penalty') . '</th>';
 
-  if (user_access("access administration pages")) {
+  if (user_access('administer league')) {
     $content .= '<th>&nbsp;</th>';
   }
   $content .= '</tr>';
@@ -122,7 +129,7 @@ function _league_show_race_result($race, $id, $names) {
       $tdClass = "league-highlight";
     }
     
-		$points = $result->points;
+    $points = $result->points;
     if ($result->hasFastestLap) {
        $points  .= "<sup>F</sup>";
      }
@@ -147,11 +154,11 @@ function _league_show_race_result($race, $id, $names) {
       $result->laps,
       $result->pitstops,
       $points,
-      league_get_confirmation_penalty($result->confirmation_flags)
+      league_get_confirmation_penalty($result->confirmationFlags)
       );
 
       $content .= $line;
-      if (user_access("access administration pages")) {
+      if (user_access('administer league')) {
         $content .= '<td><a href="?q=admin/league/results/edit/' . $result->id . '">' . t('Edit') . '</a></td>';
       }
       
@@ -164,8 +171,8 @@ function _league_show_race_result($race, $id, $names) {
 }
 
 function league_get_race_result($id, $names) {
-	league_get_race_result_content($content, $id, null);
-	return $content;
+  league_get_race_result_content($content, $id, null);
+  return $content;
 }
 
 function league_get_race_result_detail($id) {
@@ -173,10 +180,10 @@ function league_get_race_result_detail($id) {
   $names = league_get_profile_names();
   
   $type = league_get_race_result_content($content, $id, $names);
-	
-	if ($type == 2) {
-		return $content;
-	}
+  
+  if ($type == 2) {
+    return $content;
+  }
   
   if (module_exists('league_graph')) {
     $content .= '<a href="?q=league_graph/detailsSelect/' . $id . '">' . t('Driver compare chart') . '</a><br/>';
@@ -295,7 +302,7 @@ function league_get_race_result_detail($id) {
   //$query = "SELECT driver_id,min(split1) as split1, min(split2) as split2, min(split3) as split3, min(split4) as split4 FROM {league_laps} {league_driver} WHERE raceEntry_id=" . $id . " AND time > 0 GROUP BY driver_id";
 
   $query = "SELECT driver_id, number, split1, split2, split3, split4 FROM {league_laps} {league_driver} WHERE raceEntry_id=%d " .  
-		" AND time > 0 ORDER BY driver_id, number";
+    " AND time > 0 ORDER BY driver_id, number";
   
   $result = db_query($query, $id);
 
@@ -533,73 +540,73 @@ function _league_get_pit_work($work) {
   if ($work & 1) {
     return t('Nothing');
   }
-	if ($work & 4 || $work & 16 || $work & 64 || $work & 128 || $work & 256 ||  $work & 1024 || $work & 4096) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }
-	  $workText .= t('Mech. Dam.');
-	}
-	/*
-	if ($work & 8 || $work & 32 || $work & 512 || $work & 2048 || $work & 8192) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }	  $workText .= t('Tyre(s) change');
-	}
-	*/
-	if ($work & 16384) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }
-	  $workText .= t('Minor Dam.');
-	}
-	if ($work & 32768) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }
-	  $workText .= t('Major Dam.');
-	}
-	if ($work & 65536) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }
-	  $workText .= t('Setup') . " ";
-	}
-	if ($work & 131072) {
-	  if ($workText != "") {
-	    $workText .= ", ";
-	  }
-	  $workText .= t('Refuel') . " ";
-	}
-	return $workText;
+  if ($work & 4 || $work & 16 || $work & 64 || $work & 128 || $work & 256 ||  $work & 1024 || $work & 4096) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }
+    $workText .= t('Mech. Dam.');
+  }
+  /*
+  if ($work & 8 || $work & 32 || $work & 512 || $work & 2048 || $work & 8192) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }    $workText .= t('Tyre(s) change');
+  }
+  */
+  if ($work & 16384) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }
+    $workText .= t('Minor Dam.');
+  }
+  if ($work & 32768) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }
+    $workText .= t('Major Dam.');
+  }
+  if ($work & 65536) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }
+    $workText .= t('Setup') . " ";
+  }
+  if ($work & 131072) {
+    if ($workText != "") {
+      $workText .= ", ";
+    }
+    $workText .= t('Refuel') . " ";
+  }
+  return $workText;
 }
 
 function _league_get_race($id) {
-	$query = "SELECT * FROM {league_races} AS races, {league_races_entries} as entries WHERE entries.id = %d AND entries.race_id = races.id";
+  $query = "SELECT * FROM {league_races} AS races, {league_races_entries} as entries WHERE entries.id = %d AND entries.race_id = races.id";
   $result = db_query($query, $id);
 
-	if ($row = db_fetch_object($result)) {
-		$race = new Race($row->race_id, $row->entries->id, $row->league_id);
-		$race->name = $row->name;
-		$race->data = $row->date;
-		$race->track = $row->track;
-		$race->laps = $row->laps;
-		$race->qualifingMinutes = $row->qualifing_minutes;
-		$race->weather = $row->weather;
-		$race->wind = $row->wind;
-		$race->type = $row->type;
-		$race->server = $row->server;
-		return $race;
-	}
-	
-	drupal_set_message(t('No race found for id: %id', array('%id' => $id)));
+  if ($row = db_fetch_object($result)) {
+    $race = new Race($row->race_id, $row->entries->id, $row->league_id);
+    $race->name = $row->name;
+    $race->data = $row->date;
+    $race->track = $row->track;
+    $race->laps = $row->laps;
+    $race->qualifingMinutes = $row->qualifing_minutes;
+    $race->weather = $row->weather;
+    $race->wind = $row->wind;
+    $race->type = $row->type;
+    $race->server = $row->server;
+    return $race;
+  }
+  
+  drupal_set_message(t('No race found for id: %id', array('%id' => $id)));
 
-	return null;
+  return null;
 }
 
 function _league_get_race_result($race, $id, $names) {
-	if ($race == null) {
-		return;
-	}
+  if ($race == null) {
+    return;
+  }
 
   $query = "SELECT results.*, drivers.id as driver_id, drivers.lfsworld_name, drivers.car, drivers.starting_position " .
     "FROM {league_results} AS results, {league_drivers} AS drivers " .
@@ -607,7 +614,7 @@ function _league_get_race_result($race, $id, $names) {
         
   $queryResult = db_query($query, $id);
 
-	$league_id = $race->leagueId;
+  $league_id = $race->leagueId;
   if (!$league_id) {
     $league_id = 1;
   }
@@ -616,11 +623,11 @@ function _league_get_race_result($race, $id, $names) {
   $driverRacePoints = $racePoints['driverRacePoints'];
 
   $i = 1;
-	$raceResult = array();
+  $raceResult = array();
 
   while ($row = db_fetch_object($queryResult)) {
   
-		$result = new Result();
+    $result = new Result();
     $lfsworldName = strtolower($row->lfsworld_name);
     
     $driver = null;
@@ -631,7 +638,7 @@ function _league_get_race_result($race, $id, $names) {
       $driver = new Driver(-1,$lfsworldName,strtolower($row->lfsworld_name));
     }
 
-		$result->driver = $driver;
+    $result->driver = $driver;
     
     if ($i == 1) {
       $result->time = league_get_fulltime(intval($row->race_time));
@@ -661,15 +668,15 @@ function _league_get_race_result($race, $id, $names) {
       $result->penalty .= $row->penalty;
     }
 
-		$result->id = $row->id;
-		$result->car = $row->car;
-		$result->position = $i;
-		$result->fastestLap = league_get_time($row->fastest_lap);
-		$result->laps = $row->laps;
-		$result->confirmationFlags = $row->confirmation_flags;
-		$result->pitstops = $row->pitstops;
-		$result->driver->id = $row->driver_id;
-		$raceResult[] = $result;
+    $result->id = $row->id;
+    $result->car = $row->car;
+    $result->position = $i;
+    $result->fastestLap = league_get_time($row->fastest_lap);
+    $result->laps = $row->laps;
+    $result->confirmationFlags = $row->confirmation_flags;
+    $result->pitstops = $row->pitstops;
+    $result->driver->id = $row->driver_id;
+    $raceResult[] = $result;
     $i++;
   }
   

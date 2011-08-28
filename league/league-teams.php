@@ -1,8 +1,15 @@
 <?php
-
+/**
+ * @league-teams
+ * file that holds functions to manage teams
+ *
+ * 
+ * 
+ */
 function league_admin_teams() {
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
   
   $content = '<a href="?q=admin/league/teams/add">' . t("Add new team") . '</a><p/>';
@@ -24,7 +31,7 @@ function league_admin_teams() {
 
    $i=0;
    while ($row = db_fetch_object($result)) {
-  	 $content .= "<tr>";
+     $content .= "<tr>";
      $content .= '<td>' . $row->name. '</td>';
      $content .= '<td>' . $row->league_name. '</td>';
      $content .= '<td><a href="?q=admin/league/teams/edit/' . $row->id . '">' . t("Edit") . '</a></td>';
@@ -41,14 +48,14 @@ function league_admin_teams_add($id = NULL) {
 
 function league_admin_teams_form($id = NULL) {
 
-	if (isset($id)) {
-		$values = league_admin_teams_values($id);
+  if (isset($id)) {
+    $values = league_admin_teams_values($id);
 
-		if ($_POST['op'] == t('Delete')) {
+    if ($_POST['op'] == t('Delete')) {
       drupal_goto('admin/league/teams/delete/'. $id);
     }
 
-	}
+  }
 
  $form = array();
 
@@ -62,7 +69,7 @@ function league_admin_teams_form($id = NULL) {
   $result = db_query("SELECT * FROM {league_leagues}");
   $leagues = array();
   while ($row = db_fetch_object($result)) {
-  	$leagues[$row->id] = $row->name;
+    $leagues[$row->id] = $row->name;
   }
   
   $form['league_id'] = array(
@@ -74,27 +81,30 @@ function league_admin_teams_form($id = NULL) {
 
  
   if (isset($id)) {
-	   $form['delete'] = array('#type' => 'submit',
-	      '#value' => t('Delete'),
-	      '#weight' => 30,
-	   );
-	   $form['id'] = array('#type' => 'value', '#value' => $values['id']);
-	}
+     $form['delete'] = array('#type' => 'submit',
+        '#value' => t('Delete'),
+        '#weight' => 30,
+     );
+     $form['id'] = array('#type' => 'value', '#value' => $values['id']);
+  }
 
   $form['submit'] = array(
     '#type' => 'submit', 
     '#value' => t('Save'),
     '#default_value' => $values['name']);
-	
-	return $form;
+  
+  return $form;
 }
 
 
-function league_admin_teams_form_submit($form_id, $edit) {
+function league_admin_teams_form_submit($form, &$form_state) {
   global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
+  
+  $edit = $form_state['values'];
   
   if ($edit['id'] > 0) {
     
@@ -110,11 +120,11 @@ function league_admin_teams_form_submit($form_id, $edit) {
      " VALUES('', '%s', %d)", $edit['name'], $edit['league_id']);
  }
   
-  return "admin/league/teams";
+  $form_stage['redirect'] = 'admin/league/teams';
 }
 
 function league_admin_teams_delete($id) {  
-	if (!isset($id)) {
+  if (!isset($id)) {
     drupal_not_found();
     return;
   }
@@ -129,16 +139,17 @@ function league_admin_teams_delete($id) {
     t('Delete'),
     t('Cancel')
   );
-	
+  
 }
 
-function league_admin_teams_delete_submit($form_id, $form_values) {
+function league_admin_teams_delete_submit($form, &$form_state) {
   
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();
+    return;
   }
   
-  db_query("DELETE FROM {league_teams} WHERE id = %d", $form_values['id']);
+  db_query("DELETE FROM {league_teams} WHERE id = %d", $form_state['values']['id']);
 
   return 'admin/league/teams';
 }
@@ -161,8 +172,9 @@ function league_admin_teams_values($id) {
 
 
 function league_admin_teams_drivers($id = NULL) {
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();  
+    return;
   }
   
   if ($id == NULL) {
@@ -185,7 +197,7 @@ function league_admin_teams_drivers($id = NULL) {
 
    $i=0;
    while ($row = db_fetch_object($result)) {
-  	 $content .= "<tr>";
+     $content .= "<tr>";
      $content .= '<td>' . $row->lfsworld_name. '</td>';
      $content .= '<td>' . $row->active. '</td>';
      $content .= '<td><a href="?q=admin/league/teams/drivers/edit/' . $row->id . '">' . t("Edit") . '</a></td>';
@@ -200,9 +212,9 @@ function league_admin_teams_drivers_add($id) {
 }
 
 function league_admin_teams_drivers_form($id = NULL, $team_id = NULL) {
-	if (isset($id)) {
-		$values = league_admin_teams_drivers_values($id);
-	}
+  if (isset($id)) {
+    $values = league_admin_teams_drivers_values($id);
+  }
 
  $form = array();
 
@@ -220,25 +232,28 @@ function league_admin_teams_drivers_form($id = NULL, $team_id = NULL) {
     '#options' => $active);
 
   if (isset($id)) {
-	   $form['id'] = array('#type' => 'value', '#value' => $values['id']);
+     $form['id'] = array('#type' => 'value', '#value' => $values['id']);
      $form['team_id'] = array('#type' => 'value', '#value' => $values['team_id']);
-	} else {
+  } else {
     $form['team_id'] = array('#type' => 'value', '#value' => $team_id);
   }
   $form['submit'] = array(
     '#type' => 'submit', 
     '#value' => t('Save'),
     '#default_value' => $values['name']);
-	
-	return $form;
+  
+  return $form;
 }
 
 
-function league_admin_teams_drivers_form_submit($form_id, $edit) {
+function league_admin_teams_drivers_form_submit($form, &$form_state) {
   global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
+  if (!user_access('administer league')) {
+    drupal_access_denied();
+    return;
   }
+  
+  $edit = $form_state['values'];
   
   if ($edit['id'] > 0) {
     
@@ -254,7 +269,7 @@ function league_admin_teams_drivers_form_submit($form_id, $edit) {
      " VALUES('', %d, '%s', %d)", $edit['team_id'], strtolower($edit['lfsworld_name']), $edit['active']);
  }
   
-  return "admin/league/teams/drivers/" . $edit['team_id'];
+  $form_stage['redirect'] = 'admin/league/teams/drivers/' . $edit['team_id'];
 }
 
 function league_admin_teams_drivers_values($id) {

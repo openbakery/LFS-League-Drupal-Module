@@ -1,5 +1,11 @@
 <?php
-
+/**
+ * @league-driver
+ * file to get details for the driver
+ *
+ * 
+ * 
+ */
 
 function league_get_race_driver_detail_data($id) {
   //$query = "SELECT driver_id, split1, split2, split3, split4 FROM {league_laps} {league_driver} WHERE raceEntry_id=%d AND time > 0 GROUP BY driver_id";

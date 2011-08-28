@@ -1,5 +1,12 @@
 <?php
-
+/**
+ * @league-common
+ * here common functions for the league modules can be found
+ *
+ * 
+ * 
+ */
+ 
 function getRaceResult() {
   
 }
@@ -19,15 +26,15 @@ function league_get_fulltime($time) {
   }
   if($time > 0){
     $hour = floor($time/(60*60000));
-		$min = floor( ($time - $hour*60*60000) /60000 );
-		$sek = floor($time/1000)%60;
-		$ms = ($time/10)%100;
-		if ($hour > 0) {
+    $min = floor( ($time - $hour*60*60000) /60000 );
+    $sek = floor($time/1000)%60;
+    $ms = ($time/10)%100;
+    if ($hour > 0) {
       return sprintf("%s%d:%02d:%02d.%02d", $sign, $hour, $min, $sek, $ms);
     } else {
       return sprintf("%s%02d:%02d.%02d", $sign, $min, $sek, $ms);
     }
-	}
+  }
   return "-";
 }
 
@@ -45,19 +52,19 @@ function league_get_time($time, $addSign = false, $full = false)
     $sign = "";
   }
   
-	if(is_long($abstime)){
-		$min = floor($abstime/60000);
-		$sek = floor($abstime/1000)%60;
-		$ms = ($abstime/10)%100;
+  if(is_long($abstime)){
+    $min = floor($abstime/60000);
+    $sek = floor($abstime/1000)%60;
+    $ms = ($abstime/10)%100;
     
     
-		if ($full || $min > 0) {
-  		return sprintf("%s%d:%02d.%02d", $sign, $min, $sek, $ms);
-		} else {
-  		return sprintf("%s%d.%02d", $sign, $sek, $ms);
-		}
-	}
-	return "";
+    if ($full || $min > 0) {
+      return sprintf("%s%d:%02d.%02d", $sign, $min, $sek, $ms);
+    } else {
+      return sprintf("%s%d.%02d", $sign, $sek, $ms);
+    }
+  }
+  return "";
 }
 
 function league_get_confirmation_penalty($flags) {
@@ -65,6 +72,10 @@ function league_get_confirmation_penalty($flags) {
     return t('DQF');
   } else if ($flags & 128) {
     return t('DNF');
+  } else if ($flags & 16) {
+    return t('TP');
+  } else if ($flags & 32) {
+    return t('TP');
   }
   return "";
 }
@@ -186,58 +197,58 @@ function _league_string_crop($string, $length=20) {
 
 
 function _league_race_entry_type($id) {
-	$types = _league_race_entry_types();
-	return $types[$id];
+  $types = _league_race_entry_types();
+  return $types[$id];
 }
 
 function _league_race_entry_types() {
-	return array(t('Main Race'), t('Sprint Race'), t('Qualifying'));
+  return array(t('Main Race'), t('Sprint Race'), t('Qualifying'));
 }
 
 function _league_confirmation_flags_options() {
-	return array(
-		1 => t('Mentioned'), 
-		2 => t('Confirmed'), 
-		4 => t('Penalty drive-through'),
-		8 => t('Penalty Stop and Go'),
-		16 => t('Penalty 30'),
-		32 => t('Penalty 45'),
-		64 => t('Did Not Pit'),
-		76 => t('Disqualified'),
-		48 => t('Penalty Time'),
-		128 => t('Did Not Finish'));
+  return array(
+    1 => t('Mentioned'), 
+    2 => t('Confirmed'), 
+    4 => t('Penalty drive-through'),
+    8 => t('Penalty Stop and Go'),
+    16 => t('Penalty 30'),
+    32 => t('Penalty 45'),
+    64 => t('Did Not Pit'),
+    76 => t('Disqualified'),
+    48 => t('Penalty Time'),
+    128 => t('Did Not Finish'));
 }
 
 function _league_confirmation_flags_values($confirmation_flags) {
-	$result = array();
-	$options = _league_confirmation_flags_options();
-	foreach ($options as $key => $value) {
-		if ( ($key & $confirmation_flags) > 0) {
-			$result[] = $key;
-		}
-	}
-	return $result;
+  $result = array();
+  $options = _league_confirmation_flags_options();
+  foreach ($options as $key => $value) {
+    if ( ($key & $confirmation_flags) > 0) {
+      $result[] = $key;
+    }
+  }
+  return $result;
 }
 
 function _league_confirmation_flags_value($values) {
-	$result = 0;
-	foreach ($values as $key => $value) {
-		$result = $result | $key;
-	}
-	return $result;
+  $result = 0;
+  foreach ($values as $key => $value) {
+    $result = $result | $key;
+  }
+  return $result;
 }
 
 
 class Driver {
   public $uid;
   public $name;
-	public $lfsworldName;
-	public $id;
+  public $lfsworldName;
+  public $id;
     
   public function __construct($uid = -1, $name = "", $lfsworldName) {
     $this->uid = $uid;
     $this->name = $name;
-		$this->lfsworldName = $lfsworldName;
+    $this->lfsworldName = $lfsworldName;
   }
   
   public function __toString() {
@@ -249,83 +260,83 @@ class Driver {
 }
 
 class Result {
-	
-	public $id;
-	public $position;
-	public $driver;
-	public $car;
-	public $time;
-	public $fastestLap;
-	public $laps;
-	public $pitstops;
-	public $points;
-	public $confirmationFlags;
-	public $hasFastestLap;
-	public $hasPolePosition;
-	public $penalty;
-	
-	public function __construct($driver = null) {
-		$this->driver = $driver;
-	}
-	
-	public function __toString() {
-		$result = "Result[";
-		$result .= "id: " . $this->id . ", ";
-		$result .= "position: " . $this->position . ", ";
-		$result .= "driver: " . $this->driver . ", ";
-		$result .= "car: " . $this->car . ", ";
-		$result .= "time: " . $this->time . ", ";
-		$result .= "fastestLap: " . $this->fastestLap . ", ";
-		$result .= "laps: " . $this->laps . ", ";
-		$result .= "pitstops: " . $this->pitstops . ", ";
-		$result .= "points: " . $this->points . ", ";
-		$result .= "confirmationFlags: " . $this->confirmationFlags . ", ";
-		$result .= "hasFastestLap: " . $this->hasFastestLap . ", ";
-		$result .= "hasPolePosition: " . $this->hasPolePosition . ", ";
-		$result .= "penalty: " . $this->penalty;
-		$result .= "]";
-		return $result;
-	}
+  
+  public $id;
+  public $position;
+  public $driver;
+  public $car;
+  public $time;
+  public $fastestLap;
+  public $laps;
+  public $pitstops;
+  public $points;
+  public $confirmationFlags;
+  public $hasFastestLap;
+  public $hasPolePosition;
+  public $penalty;
+  
+  public function __construct($driver = null) {
+    $this->driver = $driver;
+  }
+  
+  public function __toString() {
+    $result = "Result[";
+    $result .= "id: " . $this->id . ", ";
+    $result .= "position: " . $this->position . ", ";
+    $result .= "driver: " . $this->driver . ", ";
+    $result .= "car: " . $this->car . ", ";
+    $result .= "time: " . $this->time . ", ";
+    $result .= "fastestLap: " . $this->fastestLap . ", ";
+    $result .= "laps: " . $this->laps . ", ";
+    $result .= "pitstops: " . $this->pitstops . ", ";
+    $result .= "points: " . $this->points . ", ";
+    $result .= "confirmationFlags: " . $this->confirmationFlags . ", ";
+    $result .= "hasFastestLap: " . $this->hasFastestLap . ", ";
+    $result .= "hasPolePosition: " . $this->hasPolePosition . ", ";
+    $result .= "penalty: " . $this->penalty;
+    $result .= "]";
+    return $result;
+  }
 }
 
 class Race {
-	public $id;
-	public $entryId;
-	public $leagueId;
-	public $name;
-	public $date;
-	public $track;
-	public $laps;
-	public $qualifingMinutes;
-	public $weather;
-	public $wind;
-	public $type;
-	public $server;
-	
-	public function __construct($id = null, $entryId = null, $leagueId = null) {
-		$this->id = $id;
-		$this->entryId = $entryId;
-		$this->leagueId = $leagueId;
-	}
-	
-	public function __toString() {
-		$result = "Race[";
-		$result .= "id: " . $this->id . ", ";
-		$result .= "entryId: " . $this->entryId . ", ";
-		$result .= "leagueId: " . $this->leagueId . ", ";
-		$result .= "name: " . $this->name . ", ";
-		$result .= "date: " . $this->date . ", ";
-		$result .= "track: " . $this->track . ", ";
-		$result .= "laps: " . $this->laps . ", ";
-		$result .= "qualifingMinutes: " . $this->qualifingMinutes . ", ";
-		$result .= "weather: " . $this->weather . ", ";
-		$result .= "wind: " . $this->wind . ", ";
-		$result .= "type: " . $this->type . ", ";
-		$result .= "server: " . $this->server . ", ";
-	
-		$result .= "]";
-		return $result;
-	}
+  public $id;
+  public $entryId;
+  public $leagueId;
+  public $name;
+  public $date;
+  public $track;
+  public $laps;
+  public $qualifingMinutes;
+  public $weather;
+  public $wind;
+  public $type;
+  public $server;
+  
+  public function __construct($id = null, $entryId = null, $leagueId = null) {
+    $this->id = $id;
+    $this->entryId = $entryId;
+    $this->leagueId = $leagueId;
+  }
+  
+  public function __toString() {
+    $result = "Race[";
+    $result .= "id: " . $this->id . ", ";
+    $result .= "entryId: " . $this->entryId . ", ";
+    $result .= "leagueId: " . $this->leagueId . ", ";
+    $result .= "name: " . $this->name . ", ";
+    $result .= "date: " . $this->date . ", ";
+    $result .= "track: " . $this->track . ", ";
+    $result .= "laps: " . $this->laps . ", ";
+    $result .= "qualifingMinutes: " . $this->qualifingMinutes . ", ";
+    $result .= "weather: " . $this->weather . ", ";
+    $result .= "wind: " . $this->wind . ", ";
+    $result .= "type: " . $this->type . ", ";
+    $result .= "server: " . $this->server . ", ";
+  
+    $result .= "]";
+    return $result;
+  }
 }
 
 ?>
