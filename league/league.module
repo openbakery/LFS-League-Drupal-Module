@@ -1,953 +1,137 @@
 <?php
 
-include_once('league-common.inc');
-include_once('league-results.inc');
-include_once('league-upload.inc');
-include_once('league-driver.inc');
-include_once('league-rules.inc');
-include_once('league-teams.inc');
-include_once('league-lfsworld.inc');
+include(drupal_get_path('module', 'league') .'/league.menu.php');
+include(drupal_get_path('module', 'league') .'/league.model.php');
+include(drupal_get_path('module', 'league') .'/league-common.php');
+include(drupal_get_path('module', 'league') .'/league.database.php');
+include(drupal_get_path('module', 'league') .'/league-results.php');
+include(drupal_get_path('module', 'league') .'/league-driver.php');
+include(drupal_get_path('module', 'league') .'/league-lfsworld.php');
 
 drupal_add_css(drupal_get_path('module', 'league') .'/league.css');
 
 
-function league_menu() {
-  $accessAdmin = user_access('access administration pages');
-  
-  $items = array();
-
-  $items[] = array( 'path' => 'league',
-                    'title' => t('League'),
-                    'callback' => 'league_leagues',
-                    'access' => user_access('access content'),
-                    type => MENU_CALLBACK);
-
-  $items[] = array( 'path' => 'admin/league', 
-                    'access' => $accessAdmin,
-                    'callback' => 'league_admin_leagues',
-                    'title' => user_access('administer site configuration') ?
-                                t('League') : t('League overview'));
-
-  $items[] = array( 'path' => 'admin/league/rules', 
-                     'access' => $accessAdmin,
-                     'callback' => 'league_admin_leagues_rules',
-                     'title' => t('Rules'));
- 
-  $items[] = array('path' => 'admin/league/rules/add',
-							      'title' => t('Add league rules'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_LOCAL_TASK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_rules_form'),
-  );
-
-  $items[] = array('path' => 'admin/league/rules/delete',
-							      'title' => t('League Rules'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_CALLBACK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_rules_form'),
-  );
-
-	$items[] = array('path' => 'admin/league/rules/edit',
-								   'title' => t('Edit a league rules'),
-								   'access' => $accessAdmin,
-								   'type' => MENU_CALLBACK,
-								   'callback' => 'drupal_get_form',
-								   'callback arguments' => array('league_admin_leagues_rules_form'),
-	);
-	
-	$items[] = array( 'path' => 'admin/league/races', 
-										'title' => t('Races'),
-                     'access' => $accessAdmin,
-										 'callback' => 'league_admin_leagues_races',
-                     'title' => t('Race')
-	);
-	
-	
-	$items[] = array('path' => 'admin/league/races/add',
-							      'title' => t('Add Races'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_LOCAL_TASK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_races_form'),
-  );
-
-  $items[] = array('path' => 'admin/league/races/delete',
-							      'title' => t('League races'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_CALLBACK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_races_delete'),
-  );
-
-	$items[] = array('path' => 'admin/league/races/edit',
-								   'title' => t('Edit a league races'),
-								   'access' => $accessAdmin,
-								   'type' => MENU_CALLBACK,
-								   'callback' => 'drupal_get_form',
-								   'callback arguments' => array('league_admin_leagues_races_form'),
-	);
-
-	$items[] = array('path' => 'admin/league/upload',
-							      'title' => t('Upload gstats file'),
-							      'access' => $accessAdmin,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_upload_form'),
-	);
 
 
-  $items[] = array('path' => 'admin/league/add',
-							       'title' => t('Add a new league'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_CALLBACK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_form'),
-  );
-
-  $items[] = array('path' => 'admin/league/delete',
-							      'title' => t('League'),
-							      'access' => $accessAdmin,
-							      'type' => MENU_CALLBACK,
-							      'callback' => 'drupal_get_form',
-							      'callback arguments' => array('league_admin_leagues_delete'),
-  );
-
-	$items[] = array('path' => 'admin/league/edit',
-								   'title' => t('Edit a league'),
-								   'access' => $accessAdmin,
-								   'type' => MENU_CALLBACK,
-								   'callback' => 'drupal_get_form',
-								   'callback arguments' => array('league_admin_leagues_form'),
-	);
-
-  $items[] = array( 'path' => 'league/standings',
-                     'access' =>  user_access('access content'),
-                     'callback' => 'league_standings',
-                     'title' => t('Standings'),
-                     type => MENU_CALLBACK);
-  
-  $items[] = array( 'path' => 'league/standings/rookies',
-                    'access' =>  user_access('access content'),
-                    'callback' => 'league_standings_rookies',
-                    'title' => t('Rookie Standings'),
-                    type => MENU_CALLBACK);  
-
-  $items[] = array( 'path' => 'league/teams/standings',
-                     'access' =>  user_access('access content'),
-                     'callback' => 'league_teams_standings',
-                     'title' => t('Team Standings'),
-                     type => MENU_CALLBACK);
-
-  
-  $items[] = array( 'path' => 'league/races',
-                   'access' =>  user_access('access content'),
-                   'callback' => 'league_races',
-                   'title' => t('Races'),
-                   type => MENU_CALLBACK);
-  
-   $items[] = array( 'path' => 'admin/league/results/delete', 
-                     'access' => $accessAdmin,
-                     'title' => t('Delete results'),
-                     'type' => MENU_CALLBACK,
-  							      'callback' => 'drupal_get_form',
-  							      'callback arguments' => array('league_admin_results_delete'));
-  
-  
-   $items[] = array( 'path' => 'admin/league/results', 
-                     'access' => $accessAdmin,
-                     'callback' => 'league_admin_results',
-                     'title' => t('Results'),
-                     type => MENU_CALLBACK);
-   
-	$items[] = array('path' => 'admin/league/results/edit',
-								   'title' => t('Edit a result'),
-								   'access' => $accessAdmin,
-								   'type' => MENU_CALLBACK,
-								   'callback' => 'drupal_get_form',
-								   'callback arguments' => array('league_admin_results_form'),
-	);
-                  
-  
-  $items[] = array( 'path' => 'league/results',
-                    'access' =>  user_access('access content'),
-                    'callback' => 'league_results',
-                    'title' => t('Results'),
-                    type => MENU_CALLBACK);
-
-  $items[] = array( 'path' => 'league/results/lfsworld',
-                    'access' =>  accessAdmin,
-                    'callback' => 'league_results_lfsworld',
-                    'title' => t('Results'),
-                    type => MENU_CALLBACK);
-
-                    
-  $items[] = array( 'path' => 'league/driver/detail',
-                    'access' =>  user_access('access content'),
-                    'callback' => 'league_driver_detail',
-                    'title' => t('Driver Detail'),
-                    type => MENU_CALLBACK);
-
-	$items[] = array(
-	    'path' => 'admin/settings/league',
-	    'title' => t('League'),
-	    'description' => t('The league module managers lfs leagues.'),
-	    'callback' => 'drupal_get_form',
-	    'callback arguments' => array('league_admin_settings'),
-	    'access' => user_access('administer site configuration'),
-	    'type' => MENU_NORMAL_ITEM, // optional
-	   );
-  
-  
-     $items[] = array( 'path' => 'admin/league/teams', 
-                        'access' => $accessAdmin,
-                        'callback' => 'league_admin_teams',
-                        'title' => t('Teams'));
-
-     $items[] = array('path' => 'admin/league/teams/add',
-   							      'title' => t('Add league team'),
-   							      'access' => $accessAdmin,
-   							      'type' => MENU_LOCAL_TASK,
-   							      'callback' => 'drupal_get_form',
-   							      'callback arguments' => array('league_admin_teams_form'),
-     );
-
-     $items[] = array('path' => 'admin/league/teams/delete',
-   							      'title' => t('League Teams'),
-   							      'access' => $accessAdmin,
-   							      'type' => MENU_CALLBACK,
-   							      'callback' => 'drupal_get_form',
-   							      'callback arguments' => array('league_admin_teams_form'),
-     );
-
-   	$items[] = array('path' => 'admin/league/teams/edit',
-   								   'title' => t('Edit a league teams'),
-   								   'access' => $accessAdmin,
-   								   'type' => MENU_CALLBACK,
-   								   'callback' => 'drupal_get_form',
-   								   'callback arguments' => array('league_admin_teams_form'),
-   	);
-  
-    $items[] = array( 'path' => 'admin/league/teams/drivers', 
-                     'access' => $accessAdmin,
-                     'callback' => 'league_admin_teams_drivers',
-    							   'type' => MENU_CALLBACK,
-                     'title' => t('Team Drivers'));
-    $items[] = array( 'path' => 'admin/league/teams/drivers/add', 
-                      'access' => $accessAdmin,
-     							   'type' => MENU_CALLBACK,
-                      'callback' => 'league_admin_teams_drivers_add',
-                      'title' => t('Add driver to team'));
-    $items[] = array('path' => 'admin/league/teams/drivers/edit',
-    							   'title' => t('Edit a driver of a team'),
-    							   'access' => $accessAdmin,
-    							   'type' => MENU_CALLBACK,
-    							   'callback' => 'drupal_get_form',
-    							   'callback arguments' => array('league_admin_teams_drivers_form'),
-    );
-  
-  
-  return $items;
-}
-function _league_all() {
-  return "";
-} 
-
-function league_help($section='') {
+function league_help($path, $arg) {
   $output = '';
-  switch ($section) {
-    case "admin/modules#description":
+  switch ($path) {
+    case "admin/help#league":
       $output = t("Manage LFS Leagues");
       break;
-    case "admin/help#onthisdate":
-      $output = t("Manage LFS Leagues");
     break;
   }
   return $output;
-} // function onthisdate_help
-
-
-function league_perm() {
-  return array('access content', 'access administration pages');
 }
 
 
-function league_admin_settings() {
-	 
+function league_perm() {
+  return array('access league content', 'administer league');
+}
+
+
+function league()
+{
+  $leagues = _league_fetch_leagues();
+  $rules = _league_fetch_rules();
+  
+  $content .= '<table class="league">';
+  $content .= '<tr><th>' . t('Name') . '</th><th>' . t('Description') . '</th><th>' . ('Races') . '</th><th>' . ('Rules') . '</th><th>' . t('Homepage') . '</th></tr>';
+
+  $i=0;
+  foreach ($leagues as $league) {
+    if ( ($i%2) == 0) {
+      $content .= '<tr class="league-even">';
+    } 
+    else {
+      $content .= '<tr class="league-odd">';
+    }
+    $content .= '<td>' . $league->name . '</td>';
+    $content .= '<td>' . $league->description . '</td>';
+    $content .= '<td>' . $rules[$league->ruleId]->name . '</td>';
+    $content .= '<td>' . l("Races", "league/" . $league->id . "/races") . '</td>';
+    $content .= '<td>' . l("Homepage", $league->homepage) . '</td>';
+    $content .= '</tr>';
+    $i++;
+  }
+  $content .= '</table>';
+ 
+  return $content;
+}
+
+function league_admin() {
+
+  $form = array();
+  
+  $result = db_query("SELECT id, name FROM {league_leagues}");
+  $leagues = array();
+  while ($row = db_fetch_object($result)) {
+    $leagues[$row->id] = $row->name;
+  }  
+
   $form['league_block_id'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('League displayed in block'), 
-    '#default_value' => variable_get('league_block_display', 1), 
-    '#description' => t("Select the league that should be displayed in the block."), 
-    '#maxlength' => '2', '#size' => '2');
+      '#type' => 'select', 
+      '#title' => t('League displayed in block'), 
+      '#required' => TRUE,
+      '#default_value' => variable_get('league_block_display', 1), 
+      '#options' => $leagues);      
+  
   $form['league_block_size'] = array(
-      '#type' => 'textfield', 
-      '#title' => t('Number of results displayed in block'), 
-      '#default_value' => variable_get('league_block_size', 1), 
-      '#description' => t("The number of results that should be displayed in the block."), 
-      '#maxlength' => '2', '#size' => '2');
-  $form['league_block_title'] = array(
-      '#type' => 'textfield', 
-      '#title' => t('Standings Block title'), 
-      '#default_value' => variable_get('league_block_title', 1), 
-      '#description' => t("Standings Block title."), 
-      '#maxlength' => '20', '#size' => '20');
-      
-  $form['league_profile_lfsworldname'] = array(
     '#type' => 'textfield', 
-    '#title' => t('Profile field name for the lfsworld entry'), 
-    '#default_value' => variable_get('league_profile_lfsworldname', 1), 
-    '#description' => t("The profile field name the of the lfsworld name"), 
-    '#maxlength' => '30', '#size' => '20');
-    
+    '#title' => t('Number of results displayed in block'), 
+    '#default_value' => variable_get('league_block_size', 1), 
+    '#description' => t("The number of results that should be displayed in the block."), 
+    '#maxlength' => '2', '#size' => '2');
+  
+  $form['league_block_title'] = array(
+    '#type' => 'textfield', 
+    '#title' => t('Standings Block title'), 
+    '#default_value' => variable_get('league_block_title', 1), 
+    '#description' => t("Standings Block title."), 
+    '#maxlength' => '30', '#size' => '30');
+      
+  $result = db_query("SELECT * FROM {profile_fields}");
+  $profile_fields = array();
+  while ($row = db_fetch_object($result)) {
+    $profile_fields[$row->name] = $row->title . " - (" . $row->name . ")";
+  }  
+
+  $form['league_profile_lfsworldname'] = array(
+      '#type' => 'select', 
+      '#title' => t('Profile field name for the lfsworld entry'),
+      '#required' => TRUE,
+      '#default_value' => variable_get('league_profile_lfsworldname', 1),
+      '#options' => $profile_fields);      
+      
+
   $form['league_profile_replace_list'] = array(
     '#type' => 'textfield', 
     '#title' => t('Pattern to replace the lfs world name.'), 
     '#default_value' => variable_get('league_profile_replace_list', 1), 
     '#description' => t("The profile field names must here be in {}"), 
-    '#maxlength' => '200', '#size' => '30');
+    '#maxlength' => '200', '#size' => '100');
     
   return system_settings_form($form);
 }
 
+function league_profile_replace_list($op = 'list', $delta = 0, $edit = array()) {
 
-function league_block($op='list', $delta=0) {
-
-  // listing of blocks, such as on the admin/block page
   if ($op == "list") {
-    $block[0]["info"] = t("Standings");
-    return $block;
-  } else if ($op == "view") {
+     $block = array();
+     $block[0]["info"] = t('Standings');
+     return $block;
+   }
+  elseif ($op == "view") {
     $block['subject'] = variable_get("league_block_title", "Standings");
     $block['content'] = league_standings_block_content();
+    
     return $block;
   }
 }
 
 
-
-
-function league_admin_leagues() {
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  $result = db_query("SELECT leagues.*, rules.name AS rules_name FROM {league_leagues} AS leagues, {league_rules} AS rules" .
-    " WHERE leagues.rules_id = rules.id");
-  
-	$content .= '<a href="?q=admin/league/add">' . t('Add new league') . '</a>';
-
-  $content .= '<table border="0" class="league" >';
-  $content .= '<tr><th>' . t('Name') . '</th><th>' . t('Description') . '</th><th>' . ('Rules') . '</th><th>' . t('Homepage') . '</th><th>&nbsp;</th></tr>';
-  
-  $i=0;
-  while ($row = db_fetch_object($result)) {
-  if ( ($i%2) == 0) {
-      $tdClass = "league-even";
-    } else {
-      $tdClass = "league-odd";
-    }
+function league_list() {
     
-    $line = sprintf('<tr class="%s"><td><a href="?q=league/races/%d">%s</a></td><td>%s</td><td>%s</td><td><a href="%s">%s</a></td><td><a href="?q=admin/league/edit/%d">' . t('Edit') . '</a></td></tr>',
-      $tdClass,
-      $row->id,
-      $row->name,
-      $row->description,
-      $row->rules_name,
-      $row->homepage,
-      $row->homepage,
-      $row->id,
-      $row->id);
-      
-    $content .= $line;
-  }
-  $content .= '</table>';
-  
-  return $content;  
-}
-
-function league_admin_leagues_add($id = null) {
- return drupal_get_form('league_admin_leagues_form', $id);
-}
-
-function league_admin_leagues_form($id = NULL) {
-
-
-	if (isset($id)) {
-		$values = league_admin_leagues_values($id);
-
-		if ($_POST['op'] == t('Delete')) {
-      drupal_goto('admin/league/delete/'. $id);
-    }
-
-	}
-
-	$form = array();
-  
-  $form['name'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Name'),
-    '#cols' => 32, 
-    '#required' => TRUE,
-    '#default_value' => $values['name']);
-  
-  $form['description'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Description'),
-    '#cols' => 40,
-    '#default_value' => $values['description']);
-    
-  $result = db_query("SELECT * FROM {league_rules}");
-  $rules = array();
-  while ($row = db_fetch_object($result)) {
-    $rules[$row->id] = $row->name;
-  }  
-  
-  $form['rules'] = array(
-    '#type' => 'select', 
-    '#title' => t('Rules'),
-    '#required' => TRUE,
-    '#default_value' => $values['rules'],
-    '#options' => $rules);
-    
-  $form['servers'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Servers'),
-    '#required' => TRUE,
-    '#default_value' => $values['servers']);
-
-	$form['number_counting_results'] = array(
-	    '#type' => 'textfield', 
-	    '#title' => t('Number of counting results'),
-	    '#required' => TRUE,
-	    '#default_value' => $values['number_counting_results']);
-
-  $form['homepage'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Homepage'),
-    '#cols' => 40,
-    '#default_value' => $values['homepage']);
-
-
-  $form['rookies'] = array(
-     '#type' => 'textfield', 
-      '#title' => t('Rookies'),
-      '#cols' => 100,
-      '#default_value' => $values['rookies']);
-      
-  $form['name_pattern'] = array(
-    '#type' => 'textfield', 
-    '#title' => t('Pattern to replace the lfs world name.'), 
-    '#default_value' => $values['name_pattern'], 
-    '#description' => t("The profile field names must here be in {}"), 
-    '#maxlength' => '200', '#size' => '30');
-        
-
-		$form['block_name_pattern'] = array(
-			'#type' => 'textfield', 
-		  '#title' => t('Pattern to replace the lfs world name in the standings block'), 
-		  '#default_value' => $values['block_name_pattern'], 
-		  '#description' => t("The profile field names must here be in {}"), 
-		  '#maxlength' => '200', '#size' => '30');
-		
-  if (isset($id)) {
-	   $form['delete'] = array('#type' => 'submit',
-	      '#value' => t('Delete'),
-	      '#weight' => 30,
-	   );
-	   $form['id'] = array('#type' => 'value', '#value' => $values['id']);
-	}
-
-
-  $form['submit'] = array(
-    '#type' => 'submit', 
-    '#value' => t('Save'),
-    '#default_value' => $values['name']);
-
-  return $form;
-}
-
-function league_admin_leagues_form_validate($form_id, $form_values) {
-    if ( !is_numeric($form_values['servers']) ) {
-        form_set_error('servers', t('The servers must be a numeric value'));
-    }
-
-    if ( !is_numeric($form_values['number_counting_results']) ) {
-        form_set_error('number_counting_results', t('The "Number of counting results" must be a numeric value'));
-    }
-}
-
-
-function league_admin_leagues_form_submit($form_id, $edit) {
-  global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  if ($edit['id'] > 0) {
-    
-    db_query("UPDATE {league_leagues} SET name = '%s', description = '%s', " .  
-      "homepage = '%s', rules_id = %d, servers = %d, rookies = '%s', number_counting_results = %d , name_pattern = '%s', block_name_pattern = '%s' " .
-      "WHERE id = %d", 
-      $edit['name'], 
-      $edit['description'], 
-      $edit['homepage'], 
-      $edit['rules'],
-      $edit['servers'],
-      $edit['rookies'],
-			$edit['number_counting_results'],
-			$edit['name_pattern'],
-			$edit['block_name_pattern'],
-      $edit['id']
-      ); 
-       
-  } else {
-    $result = db_query("INSERT INTO {league_leagues} ". 
-     "(id, name, description, servers, homepage, rules_id, rookies, number_counting_results, name_pattern, block_name_pattern) " . 
-     " VALUES('', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s')", $edit['name'], $edit['description'], $edit['servers'], $edit['homepage'], $edit['rules'], $edit['rookies'], $edit['number_counting_results'], $edit['name_pattern'], $edit['block_name_pattern']); 
- }
-  
-  return "admin/league";
-}
-
-function league_admin_leagues_delete($id = NULL) {
-	if (!isset($id)) {
-    drupal_not_found();
-    return;
-  }
-
-  $form = array();
-  $form['id'] = array('#type' => 'value', '#value' => $id);
-
-  return confirm_form($form,
-    t('Are you sure you want to delete this league entry?'),
-    $_GET['destination'] ? $_GET['destination'] : 'admin/league',
-    t('This action cannot be undone.'),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-
-function league_admin_leagues_delete_submit($form_id, $form_values) {
-  
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  db_query("DELETE FROM {league_leagues} WHERE id = %d", $form_values['id']);
-
-  return 'admin/league';
-}
-
-function league_admin_leagues_values($id = -1) {
-  $values = array();
-  
-  if ($id > 0) {
-	  $result = db_query("SELECT * FROM {league_leagues} WHERE id = %d", $id);
-
-    if ($row = db_fetch_object($result)) {
-      $values['id'] = $row->id;
-      $values['name'] = $row->name;
-      $values['description'] = $row->description;
-      $values['homepage'] = $row->homepage;
-      $values['rules'] = $row->rules_id;
-      $values['servers'] = $row->servers;
-      $values['rookies'] = $row->rookies;
-  		$values['number_counting_results'] = $row->number_counting_results;
-  		$values['name_pattern'] = $row->name_pattern;
-			$values['block_name_pattern'] = $row->block_name_pattern;
-    }
-  }
-	return $values;
-}
-
-
-function league_admin_leagues_races() {
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  $content = '<a href="?q=admin/league/races/add">Add new race</a><p/>';
-  
-  $result = db_query("SELECT races.id as id, races.name as raceName, races.date as raceDate, leagues.name as leagueName FROM {league_races} as races, {league_leagues} as leagues " .
-    "WHERE races.league_id = leagues.id ORDER BY leagueName, raceDate");
-
-  $content .= "<table><tr><th>" . t('League') . "</th><th>". t('Name') . "</th><th>". t('Date') . "</th><th></th></tr>";
-
-  while ($row = db_fetch_object($result)) {
-   	$content .= "<tr>";
-    $content .= '<td>' . $row->leagueName . '</td>';
-    $content .= '<td>' . $row->raceName . '</td>';
-    $content .= '<td>' . $row->raceDate . '</td>';
-    $content .= '<td><a href="?q=admin/league/races/edit/' . $row->id . '">' . t("Edit") . '</a></td>';
-    $content .= '</tr>';
-  }
-
-  $content .= "</table>";
-
-  return $content;
-  
-}
-
-
-
-function league_admin_leagues_races_add($id = null) {
- 
- return drupal_get_form('league_admin_leagues_races_add_form', $id);
-    
-}
-
-function league_admin_leagues_races_form($id = NULL) {
-	
-	if (isset($id)) {
-		$values =	league_admin_leagues_races_values($id);
-
-		if ($_POST['op'] == t('Delete')) {
-      drupal_goto('admin/league/races/delete/'. $id);
-    }
-
-	}
-	
-	$form = array();
-  
-  $form['name'] = array(
-     '#type' => 'textfield', 
-     '#title' => t('Name'),
-     '#cols' => 32, 
-     '#required' => TRUE,
-     '#default_value' => $values['name']);
-     
-   $result = db_query("SELECT * FROM {league_leagues}");
-   $leagues = array();
-   while ($row = db_fetch_object($result)) {
-   	$leagues[$row->id] = $row->name;
-   }  
-
-   $form['league_id'] = array(
-      '#type' => 'select', 
-      '#title' => t('League'),
-      '#required' => TRUE,
-      '#default_value' => $values['league_id'],
-      '#options' => $leagues);
-   
-   $form['date'] = array(
-     '#type' => 'textfield', 
-     '#title' => t('date'),
-     '#cols' => 40,
-     '#default_value' => $values['date']);
-  
-   $form['time'] = array(
-     '#type' => 'textfield', 
-     '#title' => t('time'),
-     '#cols' => 40,
-     '#default_value' => $values['time']);  
-
-	if (isset($id)) {
-	   $form['delete'] = array('#type' => 'submit',
-	      '#value' => t('Delete'),
-	      '#weight' => 30,
-	   );
-	   $form['id'] = array('#type' => 'value', '#value' => $values['id']);
-	}
-
-   $form['submit'] = array(
-     '#type' => 'submit', 
-     '#value' => t('Save'),
-     '#default_value' => $values['name']);
-		
-	return $form;
-}
-
-function league_admin_leagues_races_values($id) {
-  
-
-  $result = db_query("SELECT * FROM {league_races} WHERE id= %d", $id);
-    
-  $values = array();
-
-  if ($row = db_fetch_object($result)) {
-    $values['id'] = $row->id;
-    $values['league_id'] = $row->league_id;
-    $values['name'] = $row->name;
-		list($date, $time) = split(' ', $row->date);
-    $values['date'] = $date;
-		$values['time'] = $time;
-  }
-
-  return $values;
-}
-
-
-function league_admin_leagues_races_form_validate($form_id, $form_values) {
-    if ( !preg_match("/\d{4}-\d{2}-\d{2}/", $form_values['date']) ) {
-        form_set_error('date', t('This must be a valid date (YYYY-MM-DD)'));
-    } else if ( !preg_match("/\d{2}:\d{2}/", $form_values['time']) ) {
-        form_set_error('time', t('This must be a valid time (HH:MM).'));
-    }
-}
-
-
-function league_admin_leagues_races_form_submit($form_id, $edit) {
-  global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-	if ($edit['id'] > 0) {
-		
-    $result = db_query("UPDATE {league_races} SET league_id = %d, name = '%s', date = '%s' WHERE id = %d", 
-      $edit['league_id'], 
-      $edit['name'], 
-      $edit['date'] . ' ' . $edit['time'],
-			$edit['id']);
-
-       
-  } else {
-		$result = db_query("INSERT INTO {league_races} ". 
-	   "(id, league_id, name, date) " . 
-	   " VALUES('', %d, '%s', '%s')", 
-	    $edit['league_id'], 
-	    $edit['name'],
-	    $edit['date'] . ' ' . $edit['time']);
- }
-
- 
-  
-  return "admin/league/races";
-}
-
-function league_admin_leagues_races_delete($id) {  
-	
-	if (!isset($id)) {
-    drupal_not_found();
-    return;
-  }
-
-  $form = array();
-  $form['id'] = array('#type' => 'value', '#value' => $id);
-
-  return confirm_form($form,
-    t('Are you sure you want to delete this race entry?'),
-    $_GET['destination'] ? $_GET['destination'] : 'admin/league/races',
-    t('This action cannot be undone.'),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-function league_admin_leagues_races_delete_submit($form_id, $form_values) {
-  
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  db_query("DELETE FROM {league_races} WHERE id = %d", $form_values['id']);
-  $result = db_query("SELECT id FROM {league_races_entries} WHERE race_id = %d",  $form_values['id']);
-  $raceEntryIds = array();
-    while ($row = db_fetch_object($result)) {
-      $raceEntryIds[] = $row->id;
-    }
-  
-  foreach($raceEntryIds as $raceEntryId) {
-    db_query("DELETE FROM {league_races_entries} WHERE id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_laps} WHERE raceEntry_id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_drivers} WHERE raceEntry_id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_results} WHERE raceEntry_id = %d", $raceEntryId);
-  }
-  return 'admin/league/races';
-}
-
-function league_admin_results() {
-  
-}
-
-
-function league_admin_results_delete($id) {  
-	
-	if (!isset($id)) {
-    drupal_not_found();
-    return;
-  }
-
-  $form = array();
-  $form['id'] = array('#type' => 'value', '#value' => $id);
-
-  return confirm_form($form,
-    t('Are you sure you want to delete this race entry?'),
-    $_GET['destination'] ? $_GET['destination'] : 'admin/league/results',
-    t('This action cannot be undone.'),
-    t('Delete'),
-    t('Cancel')
-  );
-}
-
-
-function league_admin_results_delete_submit($form_id, $form_values) {
-  
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  db_query("DELETE FROM {league_races_entries} WHERE id = %d", $form_values['id']);
-  db_query("DELETE FROM {league_laps} WHERE raceEntry_id = %d", $form_values['id']);
-  db_query("DELETE FROM {league_drivers} WHERE raceEntry_id = %d", $form_values['id']);
-  db_query("DELETE FROM {league_results} WHERE raceEntry_id = %d", $form_values['id']);
-
-  return 'admin/league';
-}
-
-
-function league_admin_results_add($id = null) {
- return drupal_get_form('league_admin_results_add_form', $id);
-}
-
-function league_admin_results_form($id) {
-	
-	if (isset($id)) {
-		$values = league_admin_results_values($id);
-
-
-	}
-	
-	$form = array();
-  
-  $form['id'] = array(
-    '#type' => 'hidden', 
-    '#value' => $values['id']);  
-
-  $form['raceEntry_id'] = array(
-     '#type' => 'textfield', 
-     '#title' => t('raceEntry_id'),
-     '#cols' => 32, 
-     '#required' => TRUE,
-     '#default_value' => $values['raceEntry_id']);
-
-  $form['driver_id'] = array(
-     '#type' => 'textfield', 
-     '#title' => t('driver_id'),
-     '#cols' => 32, 
-     '#required' => TRUE,
-     '#default_value' => $values['driver_id']);
-     
-  $form['position'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('position'),
-        '#cols' => 32, 
-        '#required' => TRUE,
-        '#default_value' => $values['position']);
-
-  $form['race_time'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('race_time'),
-        '#cols' => 32, 
-        '#required' => TRUE,
-        '#default_value' => $values['race_time']);
-
-  $form['fastest_lap'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('fastest_lap'),
-        '#cols' => 32, 
-        '#required' => TRUE,
-        '#default_value' => $values['fastest_lap']);
-
-  $form['laps'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('laps'),
-        '#cols' => 32, 
-        '#required' => TRUE,
-        '#default_value' => $values['laps']);
-
-  $form['pitstops'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('pitstops'),
-        '#cols' => 32, 
-        '#required' => TRUE,
-        '#default_value' => $values['pitstops']);
-
-
-	$form['confirmation_flags_options'] = array(
-		'#type' => 'value',
-		'#value' => _league_confirmation_flags_options()
-	);
-
-	$form['confirmation_flags_options'] = array(
-	  '#type' => 'select', 
-	  '#title' => t('Confirmation Flags'),
-	  '#default_value' => $values['confirmation_flags_options'],
-	  '#multiple' => TRUE,
-	  '#options' => $form['confirmation_flags_options']['#value']);
-
-  $form['penalty'] = array(
-        '#type' => 'textfield', 
-        '#title' => t('penalty'),
-        '#cols' => 32, 
-        '#required' => FALSE,
-        '#default_value' => $values['penalty']);
-
-  $form['submit'] = array(
-     '#type' => 'submit', 
-     '#value' => t('Save'),
-     '#default_value' => $values['name']);
-
-	return $form;
-}
-
-function league_admin_results_values($id) {
-  
-  
-  $result = db_query("SELECT * FROM {league_results} WHERE id= %d", $id);
-    
-  $values = array();
-
-  if ($row = db_fetch_object($result)) {
-    $values['id'] = $row->id;
-    $values['raceEntry_id'] = $row->raceEntry_id;
-    $values['driver_id'] = $row->driver_id;
-    $values['position'] = $row->position;
-    $values['race_time'] = $row->race_time;
-    $values['fastest_lap'] = $row->fastest_lap;
-    $values['laps'] = $row->laps;
-    $values['pitstops'] = $row->pitstops;
-    $values['confirmation_flags_options'] = _league_confirmation_flags_values($row->confirmation_flags);
-    $values['penalty'] = $row->penalty;
-  }
-  return $values;
-}
-
-
-function league_admin_results_form_submit($form_id, $edit) {
-  global $user;
-  if (!user_access("access administration pages")) {
-    return message_access();  
-  }
-  
-  if ($edit['id'] > 0) {
-   
-		$confirmation_flags_options = _league_confirmation_flags_value($edit['confirmation_flags_options']);
-
-    db_query("UPDATE {league_results} SET raceEntry_id = %d, driver_id = %d, " .  
-      "position = %d, race_time = %d, fastest_lap = %d, laps = %d, " .
-      "pitstops = %d, confirmation_flags = %d, penalty = %d " .
-      "WHERE id = %d", 
-      $edit['raceEntry_id'], 
-      $edit['driver_id'], 
-      $edit['position'], 
-      $edit['race_time'],
-      $edit['fastest_lap'],
-      $edit['laps'],
-      $edit['pitstops'],
-      $confirmation_flags_options,
-      $edit['penalty'],
-      $edit['id']
-      ); 
-       
-  }
-  
-  return "league/results/" . $edit['raceEntry_id'];
-}
-
-function league_leagues() {
   $content = '<table border="0" class="league" >';
   $content .= '<tr><th>' . t('Name') . '</th><th>' . t('Description') . '</th><th>' . t('Homepage') . '</th><th>&nbsp;</th><th>&nbsp;</th></tr>';
 
@@ -957,11 +141,12 @@ function league_leagues() {
   while ($row = db_fetch_object($result)) {
     if ( ($i%2) == 0) {
         $tdClass = "league-even";
-      } else {
+      } 
+      else {
         $tdClass = "league-odd";
       }
       
-      $line = sprintf("<tr class=\"%s\"><td>%s</td><td>%s</td><td><a href=\"%s\">%s</a></td><td><a href=\"?q=league/races/%d\">" . t('Races') . "</a></td><td><a href=\"?q=league/standings/%d\">" . t('Standings'). "</a></td></tr>\n",
+      $line = sprintf("<tr class=\"%s\"><td>%s</td><td>%s</td><td><a href=\"%s\">%s</a></td><td><a href=\"?q=league/races/%d\">" . t('Races') . "</a></td><td><a href=\"?q=league/standings/%d\">" . t('Standings') . "</a></td></tr>\n",
         $tdClass,
         $row->name,
         $row->description,
@@ -979,213 +164,6 @@ function league_leagues() {
   return $content;
 }
 
-function league_standings() {
-  
-  $id = intval(substr($_GET['q'], strlen('league/standings/')));
-  
-  
-  $content .= '<table border="0" class="league" >';
-  $content .= '<tr><th>' . t('Pos') . '</th><th>'. t('Driver') . '</th><th>' . t('Points') . '</th>';
-  
-  $races = _get_league_races($id);
-  
-  $i = 1;
-  foreach (array_values($races) as $race) {
-    $content .= '<th><div title="' . $race['name'] . '">' . $i++ . '</div></th>';
-  }
-  $content .= '</tr>';
-  
-  $resultArray = league_get_result($id);
-  
-  
-  $driverResults = $resultArray['driverResults'];
-  $driverRacePoints =  $resultArray['driverRacePoints'];
-  
-  $names = league_get_profile_names($id);
-  $i = 1;
-  $position = 0;
-	$previousPoints = 0;
-  while (list($key, $result) = each($driverResults)) {
-    
-    if ( ($i%2) == 0) {
-      $tdClass = "league-even";
-    } else {
-      $tdClass = "league-odd";
-    }
-    if ($names) {
-      $name = $names[$key];
-    }
-    if (!$name) {
-      $name = $key;
-    }
-    
-    global $user;
-    if ($user->uid == $name->uid) {
-     $tdClass = "league-highlight"; 
-    }
-    
-		$positionValue = "";
-		if ($previousPoints != $result) {
-			$position++;
-			$positionValue = $position . ".";
-		}
-		$previousPoints = $result;
-
-    $line = sprintf("<tr class=\"%s\"><td>%s</td><td>%s</td><td>%s</td>",
-      $tdClass,
-      $positionValue,
-      $name,
-      $result
-      );
-
-
-    $content .= $line;
-    foreach (array_values($races) as $race) {
-       $content .= '<td><div title="' . t('Pos') . ': ' .  $driverRacePoints[$key][$race['id'] . '_position']  . " - Server: " . $driverRacePoints[$key][$race['id'] . '_server'] . " - " . $race['name'] . '">' . $driverRacePoints[$key][$race['id']];
-       
-       if ($driverRacePoints[$key][$race['id'] . "_fastest"]) {
-         $content .= "<sup>F</sup>";
-       }
-       if ($driverRacePoints[$key][$race['id']. "_pole"]) {
-          $content .= "<sup>P</sup>";
-        }
-        if ($driverRacePoints[$key][$race['id']. "_penalty"]) {
-           $content .= "<sup>X</sup>";
-         }
-       
-       $content .= '</div></td>';
-     }
-     
-     $content .= "</tr>\n";
-     $i++;
-  }
-  $content .= '</table>';
-  
-  $content .= '<div style="margin-top: 1em">';
-  $content .= t("F...Fastest Lap") . "<br/>" . t("P...Pole Position") . "<br/>" . t("X...Penalty");
-  $content .= "</div>";
-  return $content;
-}
-
-function league_standings_rookies() {
-  
-  $id = intval(substr($_GET['q'], strlen('league/standings/rookies/')));
-  
-  $content .= '<table border="0" class="league" >';
-  $content .= '<tr><th>' . t('Pos') . '</th><th>'. t('Driver') . '</th><th>' . t('Points') . '</th></tr>';
-  
-  $result = db_query("SELECT rookies FROM {league_leagues} WHERE id = %d", $id);
-  if ($row = db_fetch_object($result)) {
-    $rookies = preg_split("/,/", strtolower($row->rookies));
-  }
-  
- 
-  
-  $resultArray = league_get_result($id);
-  
-  $driverResults = $resultArray['driverResults'];
- 
-  $names = league_get_profile_names($id);
-  $i = 1;
-  while (list($key, $result) = each($driverResults)) {
-    if (in_array(strtolower($key), $rookies)) {
-      if ( ($i%2) == 0) {
-        $tdClass = "league-even";
-      } else {
-        $tdClass = "league-odd";
-      }
-      if ($names) {
-        $name = $names[$key];
-      }
-      if (!$name) {
-        $name = $key;
-      }
-      
-      global $user;
-      if ($user->uid == $name->uid) {
-       $tdClass = "league-highlight"; 
-      }
-    
-      $line = sprintf("<tr class=\"%s\"><td>%d.</td><td>%s</td><td>%s</td></tr>\n",
-        $tdClass,
-        $i++,
-        $name,
-        $result
-        );
-
-       $content .= $line;
-     }
-  }
-  $content .= '</table>';
-  
-  return $content;
-}
-
-
-function league_races() {
-  
-  $isAdmin = user_access("access administration pages");
-  
-    
-  $id = intval(substr($_GET['q'], strlen('league/races/')));
-
-  $content .= '<table border="0" class="league" >';
-  $content .= '<tr><th>' . t('Name') . '</th><th>' . t('Track') . '</th><th>' . t('Server') . '</th><th>' . t('Date') . '</th><th>' . ('Laps') . '</th><th>' . ('Type') . '</th><th>' . t('Weather') . '</th><th>' . t('Wind') . '</th>';
-  if ($isAdmin) {
-    $content .= '<th></th>';
-  }
-  $content .= '</tr>';
-  
-  if ($id != "") {
-
-        $query = "SELECT * FROM {league_races} as race,  {league_races_entries} as entry " .
-          "WHERE race.league_id= %d AND entry.race_id = race.id ORDER BY date, server ";
-        $result = db_query($query, $id);
-
-        $i = 1;
-        while ($row = db_fetch_object($result)) {
-          if ( ($i%2) == 0) {
-            $tdClass = "league-even";
-          } else {
-            $tdClass = "league-odd";
-          }
-        
-          $line = sprintf("\n\t<tr class=\"%s\"><td><a href=\"?q=league/results/%d\">%s</a> ".
-            "</td><td>%s</td><td style=\"text-align:center\">%s</td><td>%s</td><td>%d</td><td>%s</td><td>%d</td><td>%s</td>",
-            $tdClass,
-            $row->id,
-            $row->name,
-            league_get_track_name($row->track),
-            $row->server + 1,
-            substr($row->date, 0, strlen($row->date)-3),
-            $row->laps,
-            _league_race_entry_type($row->type),
-            $row->weather,
-            league_get_wind($row->wind));
-          $content .=  $line;
-          if ($isAdmin) {
-            $content .= '<td><a href="?q=admin/league/results/delete/' . $row->id . '">' . t('Delete') . '</a></td>';
-          }
-          $content .= '</tr>';
-        }
-       
-      } 
-    
-    $content .= '</table>';
-  
-  
-  return $content;
-  
-}
-
-function league_results() {
-  
-  $id = intval(substr($_GET['q'], strlen('league/results/')));
-  
-  
-  return league_get_race_result_detail($id);
-  
-}
 
 function league_get_result($id, $numberOfResults=-1) {
   
@@ -1199,129 +177,131 @@ function league_get_result($id, $numberOfResults=-1) {
     $rules['sprint_race_fastest_lap'] = $row->sprint_race_fastest_lap;
     $rules['poleposition_points'] = $row->poleposition_points;
     $rules['sprint_poleposition_points'] = $row->sprint_poleposition_points;
-		$number_counting_results = $row->number_counting_results;	
+    $number_counting_results = $row->number_counting_results;  
   }
 
-	if ($number_counting_results < 1) {
-		$number_counting_results = 99999;
-	}
+  if ($number_counting_results < 1) {
+    $number_counting_results = 99999;
+  }
 
-	$query = "SELECT results.raceEntry_id as raceEntry_id, results.position as position, results.confirmation_flags, " .
-		" drivers.lfsworld_name as lfsworld_name, results.fastest_lap as fastest_lap, results.penalty as penalty,".
-		" drivers.starting_position as starting_position, entries.server as server, entries.type as type, " .
-		" races.id as race_id, drivers.team_id as team_id " . 
-		"FROM {league_races_entries} AS entries, {league_results} AS results, {league_drivers} AS drivers, {league_races} AS races " .
-		"WHERE races.league_id = %d AND results.raceEntry_id = entries.id AND results.driver_id = drivers.id "  .
-		"AND races.id = entries.race_id AND entries.laps > 0 ";
+  $query = "SELECT results.raceEntry_id as raceEntry_id, results.position as position, results.confirmation_flags, " .
+    " drivers.lfsworld_name as lfsworld_name, results.fastest_lap as fastest_lap, results.penalty as penalty,".
+    " drivers.starting_position as starting_position, entries.server as server, entries.type as type, " .
+    " races.id as race_id, drivers.team_id as team_id " . 
+    "FROM {league_races_entries} AS entries, {league_results} AS results, {league_drivers} AS drivers, {league_races} AS races " .
+    "WHERE races.league_id = %d AND results.raceEntry_id = entries.id AND results.driver_id = drivers.id "  .
+    "AND races.id = entries.race_id AND entries.laps > 0 ";
 
  
-	$result = db_query($query,  $id);
+  $result = db_query($query,  $id);
 
-	$driverResults = array();
+  $driverResults = array();
 
-	$bestLap = 9999999999;
-	$bestLapDriverName;
+  $bestLap = 9999999999;
+  $bestLapDriverName;
 
-	$tmpResults = array();
-	$bestLap = array();
-	$inResult = array();
-	$hasSprint = 0;
-	$raceIds = array();
-	$i = 0;
+  $tmpResults = array();
+  $bestLap = array();
+  $inResult = array();
+  $hasSprint = 0;
+  $raceIds = array();
+  $i = 0;
     
-	while ($row = db_fetch_object($result)) {
-		$tmpResults[$i]['position'] = $row->position; 
-		$tmpResults[$i]['lfsworld_name'] = strtolower($row->lfsworld_name);
-		$tmpResults[$i]['team_id'] = $row->team_id;
-		$tmpResults[$i]['fastest_lap'] = $row->fastest_lap;
-		$tmpResults[$i]['race_id'] = $row->race_id;
-		$tmpResults[$i]['type'] = $row->type;
-		$tmpResults[$i]['starting_position'] = $row->starting_position;
-		$tmpResults[$i]['server'] = $row->server;
-		$tmpResults[$i]['penalty'] = $row->penalty;
-		$tmpResults[$i]['confirmation_flags'] = $row->confirmation_flags;
-		$race_key = $row->race_id . '_' . $row->server;
-		if ($bestLap[$race_key] == 0 || $bestLap[$race_key] > $row->fastest_lap) {
-			$bestLap[$race_key] = $row->fastest_lap;
-		}
-		if ( !($row->confirmation_flags&64) && !($row->confirmation_flags&128) ) {
-			$inResult[$race_key] += 1;
-		}
-		$hasSprint += $row->sprint;
-		$raceIds[$row->race_id]=0;
-		$i++;
-	}
-	
-	//print_r($tmpResults);
+  while ($row = db_fetch_object($result)) {
+    $tmpResults[$i]['position'] = $row->position; 
+    $tmpResults[$i]['lfsworld_name'] = strtolower($row->lfsworld_name);
+    $tmpResults[$i]['team_id'] = $row->team_id;
+    $tmpResults[$i]['fastest_lap'] = $row->fastest_lap;
+    $tmpResults[$i]['race_id'] = $row->race_id;
+    $tmpResults[$i]['type'] = $row->type;
+    $tmpResults[$i]['starting_position'] = $row->starting_position;
+    $tmpResults[$i]['server'] = $row->server;
+    $tmpResults[$i]['penalty'] = $row->penalty;
+    $tmpResults[$i]['confirmation_flags'] = $row->confirmation_flags;
+    $race_key = $row->race_id . '_' . $row->server;
+    if ($bestLap[$race_key] == 0 || $bestLap[$race_key] > $row->fastest_lap) {
+      $bestLap[$race_key] = $row->fastest_lap;
+    }
+    if ( !($row->confirmation_flags&64) && !($row->confirmation_flags&128) ) {
+      $inResult[$race_key] += 1;
+    }
+    $hasSprint += $row->sprint;
+    $raceIds[$row->race_id]=0;
+    $i++;
+  }
+  
+  //print_r($tmpResults);
 
-	$raceIds = array_keys($raceIds);
-
-/*
-	echo "-> RaceIds ";
-	print_r($raceIds);
-	echo "<br>InResult: ";
-	print_r($inResult);
-	echo "<br>bestLap ";
-	print_r($bestLap);
-*/
-
-	$driverRacePoints = array();
-	foreach (array_values($tmpResults) as $row) {
-		$lfsWorldName = strtolower($row['lfsworld_name']);
-		$standingsPosition = 0;
-		$disqualifiedDrivers = 0;
+  $raceIds = array_keys($raceIds);
 
 
-		for($i=0; $i<$row['server'];$i++) {
-			$standingsPosition += $inResult[$row['race_id'] . "_" . $i];
-		}
+  // echo "-> RaceIds ";
+  // print_r($raceIds);
+  // echo "<br>InResult: ";
+  // print_r($inResult);
+  // echo "<br>bestLap ";
+  // print_r($bestLap);
 
-		$standingsPosition += $row['position'];
+  $driverRacePoints = array();
+  foreach (array_values($tmpResults) as $row) {
+    $lfsWorldName = strtolower($row['lfsworld_name']);
+    $standingsPosition = 0;
+    $disqualifiedDrivers = 0;
 
-		$driverRacePoints[$lfsWorldName][$row['race_id'] . '_position'] = $row['position'];
-		$driverRacePoints[$lfsWorldName][$row['race_id'] . '_server'] = $row['server'] + 1;
-		$driverRacePoints[$lfsWorldName][$row['race_id'] . '_team_id'] = $row['team_id'];
+
+    for ($i=0; $i<$row['server'];$i++) {
+      $standingsPosition += $inResult[$row['race_id'] . "_" . $i];
+    }
+
+    $standingsPosition += $row['position'];
+
+    $driverRacePoints[$lfsWorldName][$row['race_id'] . '_position'] = $row['position'];
+    $driverRacePoints[$lfsWorldName][$row['race_id'] . '_server'] = $row['server'] + 1;
+    $driverRacePoints[$lfsWorldName][$row['race_id'] . '_team_id'] = $row['team_id'];
 
     if ( !($row['confirmation_flags']&64) && !($row['confirmation_flags']&128) ) {
-   	 if ($row['type'] == 1) {
-	       // is spring race
-	       $driverResults[$lfsWorldName] += $rules['sprint_race_points'][$standingsPosition-1];
-	       $driverRacePoints[$lfsWorldName][$row['race_id']] = $rules['sprint_race_points'][$standingsPosition-1];
-	     } else if ($row['type'] == 0) {
-		     // is main race
-	       $driverResults[$lfsWorldName] += $rules['main_race_points'][$standingsPosition-1];
-	       $driverRacePoints[$lfsWorldName][$row['race_id']] = $rules['main_race_points'][$standingsPosition-1];
-	     }
+      if ($row['type'] == 1) {
+         // is spring race
+         $driverResults[$lfsWorldName] += $rules['sprint_race_points'][$standingsPosition-1];
+         $driverRacePoints[$lfsWorldName][$row['race_id']] = $rules['sprint_race_points'][$standingsPosition-1];
+       } 
+       elseif ($row['type'] == 0) {
+         // is main race
+         $driverResults[$lfsWorldName] += $rules['main_race_points'][$standingsPosition-1];
+         $driverRacePoints[$lfsWorldName][$row['race_id']] = $rules['main_race_points'][$standingsPosition-1];
+       }
       
 
-			} else {
+      } 
+      else {
         $disqualifedDrivers++;
       }
 
-    	if ( $bestLap[$row['race_id'] . '_' . $row['server'] ] == $row['fastest_lap']) {
+      if ( $bestLap[$row['race_id'] . '_' . $row['server'] ] == $row['fastest_lap']) {
         if ($row['type'] == 1) {
-					 // is spring race
+           // is spring race
           $driverResults[$lfsWorldName] += $rules['sprint_race_fastest_lap'] / ($row['server']+1);
           $driverRacePoints[$lfsWorldName][$row['race_id']] += $rules['sprint_race_fastest_lap'] / ($row['server']+1);
-          $driverRacePoints[$lfsWorldName][$row['race_id'] . "_fastest"] = true;
-        } else if ($row['type'] == 0){
-	        // is main race 
+          $driverRacePoints[$lfsWorldName][$row['race_id'] . "_fastest"] = TRUE;
+        } 
+        elseif ($row['type'] == 0) {
+          // is main race 
           $driverResults[$lfsWorldName] += $rules['main_race_fastest_lap'] / ($row['server']+1);
           $driverRacePoints[$lfsWorldName][$row['race_id']] += $rules['main_race_fastest_lap'] / ($row['server']+1);
-          $driverRacePoints[$lfsWorldName][$row['race_id'] . "_fastest"] = true;
+          $driverRacePoints[$lfsWorldName][$row['race_id'] . "_fastest"] = TRUE;
         }
       }
 
       if ( $row['starting_position'] == 1 && $row['type'] == 0 && $rules['poleposition_points'] > 0) {
         $driverResults[$lfsWorldName] += $rules['poleposition_points'] / ($row['server']+1);
         $driverRacePoints[$lfsWorldName][$row['race_id']] += $rules['poleposition_points'] / ($row['server']+1);
-        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_pole"] = true;
+        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_pole"] = TRUE;
       }
       
       if ( $row['starting_position'] == 1 && $row['type'] == 1 && $rules['sprint_poleposition_points'] > 0) {
         $driverResults[$lfsWorldName] += $rules['sprint_poleposition_points'] / ($row['server']+1);
         $driverRacePoints[$lfsWorldName][$row['race_id']] += $rules['sprint_poleposition_points'] / ($row['server']+1);
-        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_pole"] = true;
+        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_pole"] = TRUE;
       }
       
      
@@ -1329,34 +309,32 @@ function league_get_result($id, $numberOfResults=-1) {
       if ( $row['penalty'] != 0) {
         $driverResults[$lfsWorldName] += $row['penalty'];
         $driverRacePoints[$lfsWorldName][$row['race_id']] += $row['penalty'];
-        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_penalty"] = true;
+        $driverRacePoints[$lfsWorldName][$row['race_id'] . "_penalty"] = TRUE;
       }
     }
   
-	foreach($driverRacePoints as $lfsWorldName => $results) {
-		if (count($results) > $number_counting_results) {
-			$points = array();
-			foreach(array_values($raceIds) as $raceId) {
-				$points[] = $results[$raceId];
-			}
-			rsort($points);
-			
-			$driverResults[$lfsWorldName]=0;
-			for ($i=0; $i<$number_counting_results; $i++) {
-				$driverResults[$lfsWorldName] += $points[$i];
-			}
-			
-			/*
-			echo $sumPoints . " ==== <br/>";
-			print_r($points);
-			echo " --- <br/>";
-			print_r($results);
-			*/
-		}
-		//echo "<br><br>\n\n";
-	}
-	
-	//print_r($driverRacePoints);
+  foreach ($driverRacePoints as $lfsWorldName => $results) {
+    if (count($results) > $number_counting_results) {
+      $points = array();
+      foreach (array_values($raceIds) as $raceId) {
+        $points[] = $results[$raceId];
+      }
+      rsort($points);
+      
+      $driverResults[$lfsWorldName]=0;
+      for ($i=0; $i<$number_counting_results; $i++) {
+        $driverResults[$lfsWorldName] += $points[$i];
+      }
+      
+      // echo $sumPoints . " ==== <br/>";
+      //       print_r($points);
+      //       echo " --- <br/>";
+      //       print_r($results);
+    }
+    //echo "<br><br>\n\n";
+  }
+  
+  //print_r($driverRacePoints);
 
   arsort($driverResults);
 
@@ -1372,6 +350,7 @@ function league_driver_detail() {
   return league_get_race_driver_detail($id);
 }
 
+
 function league_standings_block_content() {
   
   
@@ -1381,11 +360,11 @@ function league_standings_block_content() {
   
   $numberOfResults = variable_get("league_block_size", 5);
   
-	
-	$league_values = league_admin_leagues_values($id);
-	$profile_replace_string = $league_values['block_name_pattern'];
+  
+  $league_values = league_admin_leagues_values($id);
+  $profile_replace_string = $league_values['block_name_pattern'];
 
-	$names = league_get_profile_names($id, $profile_replace_string);
+  $names = league_get_profile_names($id, $profile_replace_string);
   
   $resultArray = league_get_result($id, $numberOfResults);
   
@@ -1397,11 +376,12 @@ function league_standings_block_content() {
     
     if ( ($i%2) == 0) {
       $tdClass = "league-even";
-    } else {
+    } 
+    else {
       $tdClass = "league-odd";
     }
     
-		if ($names) {
+    if ($names) {
       $name = $names[$key];
     }
     if (!$name) {
@@ -1428,21 +408,23 @@ function league_standings_block_content() {
 
 
 function league_get_profile_names($id = -1, $profile_replace_string = "") {
+  //FIXME!!!
+  return;
   
   $names = array();
   
-  $profile_lfsworldname = strtolower(variable_get('league_profile_lfsworldname', null));
+  $profile_lfsworldname = strtolower(variable_get('league_profile_lfsworldname', NULL));
   
   
   
-	if ($profile_replace_string == "") {
-		$league_values = league_admin_leagues_values($id);
-  	$profile_replace_string = $league_values['name_pattern'];
-  	if (!$profile_replace_string) {
-    	$profile_replace_string = variable_get('league_profile_replace_list', null);
-  	}
-	}
-	
+  if ($profile_replace_string == "") {
+    $league_values = league_admin_leagues_values($id);
+    $profile_replace_string = $league_values['name_pattern'];
+    if (!$profile_replace_string) {
+      $profile_replace_string = variable_get('league_profile_replace_list', NULL);
+    }
+  }
+  
   if (!$profile_lfsworldname || !$profile_replace_string) {
     return;
   }
@@ -1458,7 +440,7 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
     if (strtolower($row->name) == $profile_lfsworldname) {
       $profile_lfsworldname_fid = $row->fid;
     }
-    foreach($replaceVariables as $value) {
+    foreach ($replaceVariables as $value) {
       if ($row->name == $value) {
         $replace[$value] = $row->fid;
       }
@@ -1474,7 +456,8 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
     $uid = $row->uid;
     if ($row->fid == $profile_lfsworldname_fid) {
       $allDrivers[$uid]['LFSWorldName'] = strtolower($row->value);
-    } else {
+    } 
+    else {
       foreach ($replace as $key => $value) {
        if ($row->fid == $value) {
           $allDriversReplacements[$uid][$key] = $row->value;
@@ -1483,34 +466,16 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
     }
   }
    
-  foreach($allDrivers as $key => $drivers) {
+  foreach ($allDrivers as $key => $drivers) {
     $replaceArray = array();
-    foreach($replaceVariables as $value) {
+    foreach ($replaceVariables as $value) {
       $replaceArray[] = $allDriversReplacements[$key][$value];
     }
 
-   	$name = vsprintf($replaceString, $replaceArray);
+     $name = vsprintf($replaceString, $replaceArray);
     $names[$drivers['LFSWorldName']] = new Driver($key, $name, $drivers['LFSWorldName']);
   }
   return $names;
 }
 
-function _get_league_races($leagueId) {
-  
-  $result = db_query("SELECT * FROM oelfs_league_races WHERE league_id = %d ORDER BY date", $leagueId);
-  
-  $races = array();
-  
-  $i = 0;
-  while ($row = db_fetch_object($result)) {
-      $races[$i]['id'] = $row->id;
-      $races[$i]['name'] = $row->name;
-      $races[$i]['date'] = $row->date;
-      $races[$i]['league_id'] = $row->league_id;
-      $i++;
-  }
-    
-  return $races;
-}
 
-?>

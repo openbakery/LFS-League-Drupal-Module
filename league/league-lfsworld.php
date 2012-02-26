@@ -12,10 +12,11 @@ function league_results_lfsworld($id = 0) {
     $names = league_get_profile_names();
   }
 
-  $race = _league_get_race($id);
+  $raceEntry = _league_fetch_race_entry($id);
   
 
-  $raceResult = _league_get_race_result($race, $id, $names);
+// only race is needed here
+  $raceResult = _league_fetch_race_entry_result($raceEntry, $id, $names);
   //print_r($raceResult);
   
   $output = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n";

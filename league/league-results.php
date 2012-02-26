@@ -6,26 +6,33 @@
  * 
  * 
  */
- 
-function league_get_race_result_content(&$content, $id, $names) {
 
+
+function league_results($leagueId, $raceId) {
+  _league_results_detail($content, $leagueId, $raceId);
+  return $content;
+} 
+ 
+function _league_results_main(&$content, $leagueId, $id, $names = NULL) {
   if (!$names) {
     $names = league_get_profile_names();
   }
   
   $content = "";
   
-  if ($id == "")
-    return "";
+  if (!$id)
+  {
+    return -1;
+  }
   
-  $race = _league_get_race($id);
-  
-  if ($race->type == 2) {
+  $raceEntry = _league_fetch_race_entry($id);
+
+  if ($raceEntry->type == 2) {
     $content .= _league_show_qualifying_result($id, $names);
   } else {
-    $content .= _league_show_race_result($race, $id, $names);
+    $content .= _league_show_race_result($raceEntry, $id, $names);
   }
-  return $race->type;
+  return $raceEntry->type;
 }
 
 function _league_show_qualifying_result($id, $names) {
@@ -93,7 +100,7 @@ function _league_show_qualifying_result($id, $names) {
   
 function _league_show_race_result($race, $id, $names) {
   
-  $raceResult = _league_get_race_result($race, $id, $names);
+  $raceResult = _league_fetch_race_entry_result($race, $id, $names);
   $content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Duration:') ."</span>" . $race->laps . "</div>";
@@ -159,7 +166,7 @@ function _league_show_race_result($race, $id, $names) {
 
       $content .= $line;
       if (user_access('administer league')) {
-        $content .= '<td><a href="?q=admin/league/results/edit/' . $result->id . '">' . t('Edit') . '</a></td>';
+        $content .= '<td><a href="?q=admin/league/races/' . $id . '/results/' . $result->id . '/edit">' . t('Edit') . '</a></td>';
       }
       
       $content .= '</tr>';      
@@ -171,19 +178,17 @@ function _league_show_race_result($race, $id, $names) {
 }
 
 function league_get_race_result($id, $names) {
-  league_get_race_result_content($content, $id, null);
+  _league_results_main($content, null, $id, null);
   return $content;
 }
 
-function league_get_race_result_detail($id) {
-  
+function _league_results_detail(&$content, $leagueId, $id) {
   $names = league_get_profile_names();
-  
-  $type = league_get_race_result_content($content, $id, $names);
-  
+  $type = _league_results_main($content, NULL, $id, $names);
   if ($type == 2) {
     return $content;
   }
+  
   
   if (module_exists('league_graph')) {
     $content .= '<a href="?q=league_graph/detailsSelect/' . $id . '">' . t('Driver compare chart') . '</a><br/>';
@@ -580,31 +585,9 @@ function _league_get_pit_work($work) {
   return $workText;
 }
 
-function _league_get_race($id) {
-  $query = "SELECT * FROM {league_races} AS races, {league_races_entries} as entries WHERE entries.id = %d AND entries.race_id = races.id";
-  $result = db_query($query, $id);
 
-  if ($row = db_fetch_object($result)) {
-    $race = new Race($row->race_id, $row->entries->id, $row->league_id);
-    $race->name = $row->name;
-    $race->data = $row->date;
-    $race->track = $row->track;
-    $race->laps = $row->laps;
-    $race->qualifingMinutes = $row->qualifing_minutes;
-    $race->weather = $row->weather;
-    $race->wind = $row->wind;
-    $race->type = $row->type;
-    $race->server = $row->server;
-    return $race;
-  }
-  
-  drupal_set_message(t('No race found for id: %id', array('%id' => $id)));
-
-  return null;
-}
-
-function _league_get_race_result($race, $id, $names) {
-  if ($race == null) {
+function _league_fetch_race_entry_result($raceEntry, $id, $names) {
+  if ($raceEntry == null) {
     return;
   }
 
@@ -614,7 +597,7 @@ function _league_get_race_result($race, $id, $names) {
         
   $queryResult = db_query($query, $id);
 
-  $league_id = $race->leagueId;
+  $league_id = $raceEntry->leagueId;
   if (!$league_id) {
     $league_id = 1;
   }
@@ -651,15 +634,15 @@ function _league_get_race_result($race, $id, $names) {
         $result->time = '+' . league_get_time($winnerTime - $row->race_time);
       }
     }
-    if ($driverRacePoints[$lfsworldName][$race->id]) {
-      $result->points = $driverRacePoints[$lfsworldName][$race->id];
+    if ($driverRacePoints[$lfsworldName][$raceEntry->id]) {
+      $result->points = $driverRacePoints[$lfsworldName][$raceEntry->id];
     } else {
       $result->points = 0;
     }
-    if ($driverRacePoints[$lfsworldName][$race->id . "_fastest"]) {
+    if ($driverRacePoints[$lfsworldName][$raceEntry->id . "_fastest"]) {
        $result->hasFastestLap = true;
      }
-     if ($driverRacePoints[$lfsworldName][$race->id. "_pole"]) {
+     if ($driverRacePoints[$lfsworldName][$raceEntry->id. "_pole"]) {
         $result->hasPolePosition = true;
     }
 
