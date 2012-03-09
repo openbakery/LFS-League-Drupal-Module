@@ -17,9 +17,9 @@ function league_admin_teams($leagueId) {
   $result = db_query("SELECT teams.id as id, teams.name as name, leagues.name as league_name " . 
     "FROM {league_teams} as teams, {league_leagues} as leagues " . 
     "WHERE teams.league_id = leagues.id " .
-    "AND teams.league_id = %d " .
+    "AND teams.league_id = :id " .
     "ORDER BY league_name, name",
-    $leagueId
+    array(':id' => $leagueId)
   );
   
   
@@ -33,7 +33,7 @@ function league_admin_teams($leagueId) {
 
 
    $i=0;
-   while ($row = db_fetch_object($result)) {
+   foreach ($result as $row) {
      if ( ($i%2) == 0) {
        $content .= '<tr class="league-even">';
      } else {
@@ -51,7 +51,7 @@ function league_admin_teams($leagueId) {
 }
 
 
-function league_admin_teams_form($form_state, $leagueId, $teamId) {
+function league_admin_teams_form($form, &$form_state, $leagueId, $teamId = NULL) {
 	
  	if (isset($teamId)) {
   	$values = league_admin_teams_values($teamId);
@@ -72,7 +72,7 @@ function league_admin_teams_form($form_state, $leagueId, $teamId) {
     
   $result = db_query("SELECT * FROM {league_leagues}");
   $leagues = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $leagues[$row->id] = $row->name;
   }
 
@@ -116,25 +116,27 @@ function league_admin_teams_form_submit($form, &$form_state) {
   
   $edit = $form_state['values'];
   
+  $fields = array(
+    'name' => $edit['name'], 
+    'league_id' => $edit['league_id']
+  );
+  
   if ($edit['team_id'] > 0) {
-    
-    db_query("UPDATE {league_teams} SET name = '%s', league_id = %d " .  
-      " WHERE id = %d", 
-      $edit['name'], 
-      $edit['league_id'], 
-      $edit['team_id']); 
-       
+    db_update('league_teams')
+      ->fields($fields)
+      ->condition('id',  $edit['team_id'])
+      ->execute();
   } else {
-    $result = db_query("INSERT INTO {league_teams} ". 
-     "(id, name, league_id) " . 
-     " VALUES('', '%s', %d)", $edit['name'], $edit['league_id']);
+    db_insert('league_teams')
+      ->fields($fields)
+      ->execute();
  }
   
   $form_state['redirect'] = 'admin/league/' . $edit['league_id'] . '/teams';
 }
 
 
-function league_admin_teams_delete($form_state, $leagueId = NULL, $id = NULL) {  
+function league_admin_teams_delete($form, &$form_state, $leagueId = NULL, $id = NULL) {  
   if (!isset($id)) {
     drupal_not_found();
     return;
@@ -161,22 +163,23 @@ function league_admin_teams_delete_submit($form, &$form_state) {
     return;
   }
   
-  db_query("DELETE FROM {league_teams} WHERE id = %d", $form_state['values']['id']);
-
+  db_delete('league_teams')
+    ->condition('id', $form_state['values']['id'])
+    ->execute();
+  
   $form_state['redirect'] = 'admin/league/' . $form_state['values']['leagueId'] . '/teams';
 }
 
 function league_admin_teams_values($id) {
-  
 
-  $result = db_query("SELECT * FROM {league_teams} WHERE id=%d", $id);
+  $result = db_query("SELECT * FROM {league_teams} WHERE id=:id", array(':id' => $id) );
     
   $values = array();
 
-  if ($row = db_fetch_object($result)) {
-    $values['id'] = $row->id;
-    $values['name'] = $row->name;
-    $values['league_id'] = $row->league_id;
+ foreach ($result as $row) {
+   $values['id'] = $row->id;
+   $values['name'] = $row->name;
+   $values['league_id'] = $row->league_id;
   }
 
   return $values;
@@ -196,7 +199,7 @@ function league_admin_teams_drivers($leagueId, $teamId) {
   }
   
   $result = db_query("SELECT * FROM {league_teams_drivers} " . 
-    "WHERE team_id = %d", $teamId);
+    "WHERE team_id = :teamId", array(":teamId" => $teamId) );
   
   
   $content .= '<table class="league	">';
@@ -208,7 +211,7 @@ function league_admin_teams_drivers($leagueId, $teamId) {
 
 
    $i=0;
-   while ($row = db_fetch_object($result)) {
+   foreach ($result as $row) {
      $content .= "<tr>";
      $content .= '<td>' . $row->lfsworld_name . '</td>';
      $content .= '<td>' . $row->active . '</td>';
@@ -220,7 +223,7 @@ function league_admin_teams_drivers($leagueId, $teamId) {
 }
 
 
-function league_admin_teams_drivers_form($form_state, $leagueId, $teamId, $id = NULL) {
+function league_admin_teams_drivers_form($form, &$form_state, $leagueId, $teamId, $id = NULL) {
 
  	if (isset($id)) {
   	$values = league_admin_teams_drivers_values($id);
@@ -282,18 +285,21 @@ function league_admin_teams_drivers_form_submit($form, &$form_state) {
   
   $values = $form_state['values'];
   
-  if ($edit['id'] > 0) {
-    
-    db_query("UPDATE {league_teams_drivers} SET lfsworld_name = '%s', active = %d" .  
-      " WHERE id = %d", 
-      strtolower($values['lfsworld_name']), 
-      $values['active'], 
-      $values['id']); 
-       
+  $fields = array(
+	'team_id' => $values['team_id'],
+    'lfsworld_name' => strtolower($values['lfsworld_name']),
+    'active' => $values['active']
+  );
+  
+  if ($values['id'] > 0) {
+    db_update('league_teams_drivers')
+      ->fields($fields)
+      ->condition('id', $values['id'])
+      ->execute();
   } else {
-    $result = db_query("INSERT INTO {league_teams_drivers} ". 
-     "(id, team_id, lfsworld_name, active) " . 
-     " VALUES('', %d, '%s', %d)", $values['team_id'], strtolower($values['lfsworld_name']), $values['active']);
+    db_insert('league_teams_drivers')
+      ->fields($fields)
+      ->execute();
   }
   
   $form_state['redirect'] = 'admin/league/' . $values['league_id'] . '/teams/' . $values['team_id'] . '/drivers';
@@ -301,11 +307,11 @@ function league_admin_teams_drivers_form_submit($form, &$form_state) {
 
 function league_admin_teams_drivers_values($id) {
 
-  $result = db_query("SELECT * FROM {league_teams_drivers} WHERE id=%d", $id);
+  $result = db_query("SELECT * FROM {league_teams_drivers} WHERE id= :id", array(':id' => $id) );
     
   $values = array();
 
-  if ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $values['id'] = $row->id;
     $values['lfsworld_name'] = $row->lfsworld_name;
     $values['active'] = $row->active;
@@ -316,7 +322,7 @@ function league_admin_teams_drivers_values($id) {
 }
 
 
-function league_admin_teams_drivers_delete($form_state, $leagueId = NULL, $teamId = NULL, $id = NULL) {  
+function league_admin_teams_drivers_delete($form, &$form_state, $leagueId = NULL, $teamId = NULL, $id = NULL) {  
   if (!isset($id)) {
     drupal_not_found();
     return;
@@ -327,8 +333,11 @@ function league_admin_teams_drivers_delete($form_state, $leagueId = NULL, $teamI
   $form['leagueId'] = array('#type' => 'value', '#value' => $leagueId);
   $form['teamId'] = array('#type' => 'value', '#value' => $teamId);
 
+  $values = league_admin_teams_drivers_values($id);
+  $message = sprintf( t('Are you sure you want to delete the "%s" team driver entry?'), $values['lfsworld_name'] );
+
   return confirm_form($form,
-    t('Are you sure you want to delete this team driver entry?'),
+   	$message,
     $_GET['destination'] ? $_GET['destination'] : 'admin/league/' . $leagueId . '/teams/' . $teamId,
     t('This action cannot be undone.'),
     t('Delete'),
@@ -344,35 +353,21 @@ function league_admin_teams_drivers_delete_submit($form, &$form_state) {
     return;
   }
   
-  db_query("DELETE FROM {league_teams_drivers} WHERE id = %d", $form_state['values']['id']);
+  db_delete('league_teams_drivers')
+    ->condition('id', $form_state['values']['id'])
+    ->execute();
 
   $form_state['redirect'] = 'admin/league/' . $form_state['values']['leagueId'] . '/teams/' . $form_state['values']['teamId'];
-}
-
-
-
-function league_team_drivers_values($race_id) {
-
-  $query = "SELECT team_drivers.lfsworld_name, teams.id " . 
-    "FROM {league_teams} AS teams, {league_teams_drivers} AS team_drivers, {league_races} AS races " .
-    "WHERE races.id = %d AND races.league_id = teams.league_id AND team_drivers.team_id = teams.id";
-
-  $result = db_query($query, $race_id);
-  $values = array();
-  while ($row = db_fetch_object($result)) {
-    $values[$row->lfsworld_name] = $row->id;
-  }
-  return $values;
 }
 
 function league_teams_names($id) {
   $query = "SELECT teams.id, teams.name " . 
     "FROM {league_teams} AS teams " .
-    "WHERE teams.league_id = %d";
+    "WHERE teams.league_id = :leagueId";
   
-  $result = db_query($query, $id);
+  $result = db_query($query, array(':leagueId' => $id) );
    $values = array();
-   while ($row = db_fetch_object($result)) {
+   foreach ($result as $row) {
      $values[$row->id] = $row->name;
    }
    return $values;
@@ -436,4 +431,3 @@ function league_teams_standings($id) {
 }
 
 
-?>

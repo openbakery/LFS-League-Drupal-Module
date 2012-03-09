@@ -99,8 +99,8 @@ function league_standings_rookies($id = 0) {
   $content .= '<table border="0" class="league" >';
   $content .= '<tr><th>' . t('Pos') . '</th><th>'. t('Driver') . '</th><th>' . t('Points') . '</th></tr>';
   
-  $result = db_query("SELECT rookies FROM {league_leagues} WHERE id = %d", $id);
-  if ($row = db_fetch_object($result)) {
+  $result = db_query("SELECT rookies FROM {league_leagues} WHERE id = :id", array(':id' => $id) );
+  foreach ($result as $row) {
     $rookies = preg_split("/,/", strtolower($row->rookies));
   }
  
@@ -144,8 +144,3 @@ function league_standings_rookies($id = 0) {
   return $content;
 }
 
-
-
-
-
-?>

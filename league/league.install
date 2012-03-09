@@ -8,15 +8,6 @@
  */
  
  
-function league_install() {
-  drupal_install_schema('league');
-  db_query("DELETE FROM {cache}");
-}
-
-function league_uninstall() {
-  drupal_uninstall_schema('league');
-}
-
 function league_schema() {
   $schema['league_leagues'] = array(
      'description' => 'leagues table',

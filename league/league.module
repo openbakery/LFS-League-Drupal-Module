@@ -1,15 +1,14 @@
 <?php
 
-include(drupal_get_path('module', 'league') .'/league.menu.php');
-include(drupal_get_path('module', 'league') .'/league.model.php');
-include(drupal_get_path('module', 'league') .'/league-common.php');
-include(drupal_get_path('module', 'league') .'/league.database.php');
-include(drupal_get_path('module', 'league') .'/league-results.php');
-include(drupal_get_path('module', 'league') .'/league-driver.php');
-include(drupal_get_path('module', 'league') .'/league-lfsworld.php');
+include(drupal_get_path('module', 'league') . '/league.menu.php');
+include(drupal_get_path('module', 'league') . '/league.model.php');
+include(drupal_get_path('module', 'league') . '/league-common.php');
+include(drupal_get_path('module', 'league') . '/league.database.php');
+include(drupal_get_path('module', 'league') . '/league-results.php');
+include(drupal_get_path('module', 'league') . '/league-driver.php');
+//include(drupal_get_path('module', 'league') . '/league-lfsworld.php');
 
-drupal_add_css(drupal_get_path('module', 'league') .'/league.css');
-
+drupal_add_css(drupal_get_path('module', 'league') . '/league.css');
 
 
 
@@ -25,13 +24,21 @@ function league_help($path, $arg) {
 }
 
 
-function league_perm() {
-  return array('access league content', 'administer league');
+function league_permission() {
+  return array(
+      'access league content' => array(
+        'title' => t('Access league content'),
+        'description' => t('Permission to view the league contents'),
+      ),
+    'administer league' => array(
+      'title' => t('Administer league content'),
+      'description' => t('Perform maintenance tasks for my module'),
+    )
+  );  
 }
 
 
-function league()
-{
+function league() {
   $leagues = _league_fetch_leagues();
   $rules = _league_fetch_rules();
   
@@ -65,7 +72,7 @@ function league_admin() {
   
   $result = db_query("SELECT id, name FROM {league_leagues}");
   $leagues = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $leagues[$row->id] = $row->name;
   }  
 
@@ -76,6 +83,7 @@ function league_admin() {
       '#default_value' => variable_get('league_block_display', 1), 
       '#options' => $leagues);      
   
+ 
   $form['league_block_size'] = array(
     '#type' => 'textfield', 
     '#title' => t('Number of results displayed in block'), 
@@ -92,7 +100,7 @@ function league_admin() {
       
   $result = db_query("SELECT * FROM {profile_fields}");
   $profile_fields = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $profile_fields[$row->name] = $row->title . " - (" . $row->name . ")";
   }  
 
@@ -138,7 +146,7 @@ function league_list() {
   $result = db_query("SELECT * FROM {league_leagues}");
     
   $i=0;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     if ( ($i%2) == 0) {
         $tdClass = "league-even";
       } 
@@ -168,9 +176,9 @@ function league_list() {
 function league_get_result($id, $numberOfResults=-1) {
   
   $result =  db_query("SELECT * FROM {league_rules} AS rules, {league_leagues} AS leagues " .
-    " WHERE leagues.id = %d AND leagues.rules_id = rules.id", $id);
+    " WHERE leagues.id = :id AND leagues.rules_id = rules.id", array(':id' => $id));
 
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $rules['main_race_points'] = explode(",", $row->main_race_points);
     $rules['main_race_fastest_lap'] = $row->main_race_fastest_lap;
     $rules['sprint_race_points'] = explode(",", $row->sprint_race_points);
@@ -185,15 +193,15 @@ function league_get_result($id, $numberOfResults=-1) {
   }
 
   $query = "SELECT results.raceEntry_id as raceEntry_id, results.position as position, results.confirmation_flags, " .
-    " drivers.lfsworld_name as lfsworld_name, results.fastest_lap as fastest_lap, results.penalty as penalty,".
+    " drivers.lfsworld_name as lfsworld_name, results.fastest_lap as fastest_lap, results.penalty as penalty," .
     " drivers.starting_position as starting_position, entries.server as server, entries.type as type, " .
     " races.id as race_id, drivers.team_id as team_id " . 
     "FROM {league_races_entries} AS entries, {league_results} AS results, {league_drivers} AS drivers, {league_races} AS races " .
-    "WHERE races.league_id = %d AND results.raceEntry_id = entries.id AND results.driver_id = drivers.id "  .
+    "WHERE races.league_id = :id AND results.raceEntry_id = entries.id AND results.driver_id = drivers.id " .
     "AND races.id = entries.race_id AND entries.laps > 0 ";
 
  
-  $result = db_query($query,  $id);
+  $result = db_query($query,  array(':id' => $id) );
 
   $driverResults = array();
 
@@ -207,7 +215,7 @@ function league_get_result($id, $numberOfResults=-1) {
   $raceIds = array();
   $i = 0;
     
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $tmpResults[$i]['position'] = $row->position; 
     $tmpResults[$i]['lfsworld_name'] = strtolower($row->lfsworld_name);
     $tmpResults[$i]['team_id'] = $row->team_id;
@@ -436,7 +444,7 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
   $replaceVariables = $replaceVariables[1];
   $result = db_query("SELECT * FROM {profile_fields}");
   
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     if (strtolower($row->name) == $profile_lfsworldname) {
       $profile_lfsworldname_fid = $row->fid;
     }
@@ -452,7 +460,7 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
   $allDrivers = array();
   $allDriversReplacements = array();
 
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $uid = $row->uid;
     if ($row->fid == $profile_lfsworldname_fid) {
       $allDrivers[$uid]['LFSWorldName'] = strtolower($row->value);

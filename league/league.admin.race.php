@@ -9,17 +9,18 @@ function league_admin_leagues_races($leagueId) {
   }
 
   
-  $queryString = sprintf("SELECT races.id as id, races.name as raceName, races.date as raceDate, leagues.name as leagueName " .
+  $queryString = "SELECT races.id as id, races.name as raceName, races.date as raceDate, leagues.name as leagueName " .
     "FROM {league_races} as races, {league_leagues} as leagues " .
     "WHERE races.league_id = leagues.id " .
-    "AND leagues.id = %d " .
-    "ORDER BY leagueName, raceDate",  $leagueId);
+    "AND leagues.id = :leagueId " .
+    "ORDER BY leagueName, raceDate";
     
-  $result = db_query($queryString);
+  $result = db_query($queryString, array(':leagueId' => $leagueId));
 
   $i = 0;
-  while ($row = db_fetch_object($result)) {
-    
+ 
+  
+  foreach ($result as $row) {
     if ($i == 0) {
       $content .= '<h3>' . $row->leagueName . '</h3>';
       $content .= '<table class="league"><tr><th>'. t('Name') . "</th><th>". t('Date') . "</th><th></th></tr>";
@@ -31,8 +32,8 @@ function league_admin_leagues_races($leagueId) {
     else {
       $content .= '<tr class="league-odd">';
     }
-    $content .= '<td>' . $row->raceName . '</td>';
-    $content .= '<td>' . $row->raceDate . '</td>';
+    $content .= '<td>' . $row->racename . '</td>';
+    $content .= '<td>' . $row->racedate . '</td>';
     $content .= '<td><a href="?q=admin/league/' . $leagueId . '/races/' . $row->id . '/edit">' . t("Edit") . '</a></td>';
     $content .= '</tr>';
     $i++;
@@ -51,7 +52,7 @@ function league_admin_leagues_races_add($id = NULL) {
     
 }
 
-function league_admin_leagues_races_form($form_state, $leagueId = NULL, $id = NULL) {
+function league_admin_leagues_races_form($form, &$form_state, $leagueId = NULL, $id = NULL) {
   
   #echo "league id: " . $leagueId;
   #echo "  id: " .  $id;
@@ -76,7 +77,7 @@ function league_admin_leagues_races_form($form_state, $leagueId = NULL, $id = NU
      
    $result = db_query("SELECT * FROM {league_leagues}");
    $leagues = array();
-   while ($row = db_fetch_object($result)) {
+   foreach ($result as $row) {
      $leagues[$row->id] = $row->name;
    }  
 
@@ -91,7 +92,7 @@ function league_admin_leagues_races_form($form_state, $leagueId = NULL, $id = NU
       '#required' => TRUE,
       '#default_value' => $values['league_id'],
       '#options' => $leagues);
-   
+	  
     if (!$values['date']) {
       $values['date'] = date('Y-m-d');
     }
@@ -131,15 +132,15 @@ function league_admin_leagues_races_form($form_state, $leagueId = NULL, $id = NU
 function league_admin_leagues_races_values($id) {
   
 
-  $result = db_query("SELECT * FROM {league_races} WHERE id= %d", $id);
+  $result = db_query("SELECT * FROM {league_races} WHERE id= :id", array(':id' => $id) );
     
   $values = array();
 
-  if ($row = db_fetch_object($result)) {
+ foreach ($result as $row) {
     $values['id'] = $row->id;
     $values['league_id'] = $row->league_id;
     $values['name'] = $row->name;
-    list($date, $time) = split(' ', $row->date);
+    list($date, $time) = preg_split('/ /', $row->date);
     $values['date'] = $date;
     $values['time'] = $time;
   }
@@ -163,25 +164,28 @@ function league_admin_leagues_races_form_submit($form, &$form_state) {
   }
 
   $edit = $form_state['values'];
+  
+  $fields = array(
+	  'league_id' => $edit['league_id'],
+	  'name' => $edit['name'], 
+	  'date' => $edit['date'] . ' ' . $edit['time']
+  );
+  
   if ($edit['id'] > 0) {
-    $result = db_query("UPDATE {league_races} SET league_id = %d, name = '%s', date = '%s' WHERE id = %d", 
-      $edit['league_id'], 
-      $edit['name'], 
-      $edit['date'] . ' ' . $edit['time'],
-      $edit['id']);
+	  db_update('league_races')
+	    ->fields($fields)
+	    ->condition('id', $edit['id'])
+	    ->execute();  
   } else {
-    $result = db_query("INSERT INTO {league_races} ". 
-     "(id, league_id, name, date) " . 
-     " VALUES('', %d, '%s', '%s')", 
-      $edit['league_id'], 
-      $edit['name'],
-      $edit['date'] . ' ' . $edit['time']);
+	  db_insert('league_races')
+	    ->fields($fields)
+	    ->execute();
  }
 
   $form_state['redirect'] = 'admin/league/' . $edit['league_id'] . '/races';
 }
 
-function league_admin_leagues_races_delete($form_state, $leagueId = NULL, $id = NULL) {  
+function league_admin_leagues_races_delete($form, &$form_state, $leagueId = NULL, $id = NULL) {  
   
   if (!isset($id) && !isset($leagueId)) {
     drupal_not_found();
@@ -208,18 +212,34 @@ function league_admin_leagues_races_delete_submit($form, &$form_state) {
     return;
   }
   
-  db_query("DELETE FROM {league_races} WHERE id = %d", $form_state['values']['id']);
-  $result = db_query("SELECT id FROM {league_races_entries} WHERE race_id = %d",  $form_state['values']['id']);
+  db_delete('league_races')
+    ->condition('id', $form_state['values']['id'])
+    ->execute();
+  
+  $result = db_query("SELECT id FROM {league_races_entries} WHERE race_id = :race_id",  array('race_id' => $form_state['values']['id']) );
   $raceEntryIds = array();
-    while ($row = db_fetch_object($result)) {
-      $raceEntryIds[] = $row->id;
-    }
+  foreach ($result as $row) {
+    $raceEntryIds[] = $row->id;
+  }
   
   foreach ($raceEntryIds as $raceEntryId) {
-    db_query("DELETE FROM {league_races_entries} WHERE id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_laps} WHERE raceEntry_id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_drivers} WHERE raceEntry_id = %d", $raceEntryId);
-    db_query("DELETE FROM {league_results} WHERE raceEntry_id = %d", $raceEntryId);
+	  
+    db_delete('league_races_entries')
+      ->condition('id', $raceEntryId)
+      ->execute();
+	  
+    db_delete('league_laps')
+      ->condition('raceEntry_id', $raceEntryId)
+      ->execute();
+	  
+    db_delete('league_drivers')
+      ->condition('raceEntry_id', $raceEntryId)
+      ->execute();
+
+    db_delete('league_results')
+      ->condition('raceEntry_id', $raceEntryId)
+      ->execute();
+
   }
   $form_state['redirect'] = 'admin/league/' .  $form_state['values']['league_id'] . '/races';
 }
@@ -227,5 +247,3 @@ function league_admin_leagues_races_delete_submit($form, &$form_state) {
 function league_admin_results() {
   
 }
-
-?>

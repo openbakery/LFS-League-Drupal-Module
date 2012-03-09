@@ -8,7 +8,7 @@
  */
  
 function getRaceResult() {
-  
+	"".""."";
 }
 
 function league_get_time_with_hour($hours, $time)
@@ -240,5 +240,17 @@ function _league_confirmation_flags_value($values) {
 
 
 
+function _league_team_drivers_values($race_id) {
 
-?>
+  $query = "SELECT team_drivers.lfsworld_name, teams.id " . 
+    "FROM {league_teams} AS teams, {league_teams_drivers} AS team_drivers, {league_races} AS races " .
+    "WHERE races.id = :raceId AND races.league_id = teams.league_id AND team_drivers.team_id = teams.id";
+
+  $result = db_query($query, array(':raceId' => $race_id) );
+  $values = array();
+  foreach ($result as $row) {
+    $values[$row->lfsworld_name] = $row->id;
+  }
+  return $values;
+}
+

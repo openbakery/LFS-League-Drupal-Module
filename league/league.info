@@ -1,4 +1,21 @@
 name = League
 description = "The league module allows to manage live for speed leagues"
-core = 6.x
-version = 6.0
+core = 7.x
+version = 7.0
+
+files[] = league.module
+files[] = league-common.php
+files[] = league-results.php
+files[] = league.admin.results.php
+files[] = league.admin.upload.php
+files[] = league.model.php
+files[] = league-driver.php
+files[] = league.admin.league.php
+files[] = league.admin.rules.php
+files[] = league.database.php
+files[] = league.races.php
+;files[] = league-lfsworld.php
+files[] = league.admin.race.php
+files[] = league.admin.teams.php
+files[] = league.menu.php
+files[] = league.standings.php
