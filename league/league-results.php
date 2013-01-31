@@ -101,6 +101,10 @@ function _league_show_qualifying_result($id, $names) {
 function _league_show_race_result($race, $id, $names) {
   
   $raceResult = _league_fetch_race_entry_result($race, $id, $names);
+  if (empty($raceResult)) {
+    return '<div>' . t('No Result found') . '</div>';
+  }
+  
   $content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Duration:') ."</span>" . $race->laps . "</div>";
@@ -118,7 +122,9 @@ function _league_show_race_result($race, $id, $names) {
   $content .= '</tr>';
       
   $i = 1;
-
+  
+  
+  
   foreach($raceResult as $result) {
   
     if ( ($i%2) == 0) {
@@ -189,6 +195,16 @@ function _league_results_detail(&$content, $id) {
     return $content;
   }
   
+  $query = "SELECT drivers.lfsworld_name, drivers.starting_position, results.position, drivers.starting_position-results.position AS gain " .
+     "FROM {league_results} AS results, {league_drivers} AS drivers " .
+     "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id " .
+     "AND (drivers.starting_position-results.position) > 0 " .
+     "ORDER BY gain DESC";
+      
+  $result = db_query($query, array(':id' => $id));
+  if ($result->rowCount()== 0) {
+    return $content;
+  }
   
   if (module_exists('league_graph')) {
     $content .= '<a href="?q=league_graph/detailsSelect/' . $id . '">' . t('Driver compare chart') . '</a><br/>';
@@ -200,13 +216,6 @@ function _league_results_detail(&$content, $id) {
   $content .= '<table border="0" class="league" >';
   $content .= '<tr><th>' . t('Pos') . '</th><th>' . t('Driver') . '</th><th>' . t('Start') . '</th><th>' . t('Finish') . '</th><th>' . t('Gain') . '</th></tr>';
     
-  $query = "SELECT drivers.lfsworld_name, drivers.starting_position, results.position, drivers.starting_position-results.position AS gain " .
-     "FROM {league_results} AS results, {league_drivers} AS drivers " .
-     "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id " .
-     "AND (drivers.starting_position-results.position) > 0 " .
-     "ORDER BY gain DESC";
-      
-  $result = db_query($query, array(':id' => $id));
 
   $i = 1;
   foreach ($result as $row) {

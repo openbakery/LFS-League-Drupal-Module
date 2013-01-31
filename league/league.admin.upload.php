@@ -164,9 +164,10 @@ function _league_insert_result($line = "", $raceId, $server, $type) {
   global $raceEntryId;
   
   list($lfsworld_name, $position, $race_time, $fastest_lap, $laps, $pitstops, $confirmation_flags) = explode(";", $line);
-  
+
   $driverId = $drivers[$lfsworld_name];
-  
+
+
   $fields = array(
     'raceEntry_id' => $raceEntryId,
     'driver_id' => $driverId,
@@ -177,7 +178,7 @@ function _league_insert_result($line = "", $raceId, $server, $type) {
     'pitstops' => $pitstops,
     'confirmation_flags' => $confirmation_flags
   );
-  
+
   $driverId = db_insert('league_results')
     ->fields($fields)
     ->execute();
@@ -221,9 +222,8 @@ function _league_insert_lap($line = "", $raceId, $server, $type) {
     $newPenalty
   ) = explode(";", $line);
   
-  
   $driverId = $drivers[$lfsworld_name];
-  
+
   if (trim($pit) == 'true') {
     $pit = 1;
   } else {

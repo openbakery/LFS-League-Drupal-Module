@@ -2,6 +2,7 @@
 
 
 function league_admin_leagues() {
+
   if (!user_access('administer league')) {
     drupal_access_denied();  
     return;

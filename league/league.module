@@ -12,6 +12,20 @@ drupal_add_css(drupal_get_path('module', 'league') . '/league.css');
 
 
 
+function league_permission() {
+  return array(
+      'access league content' => array(
+        'title' => t('Access league content'),
+        'description' => t('Permission to view the league contents'),
+      ),
+    'administer league' => array(
+      'title' => t('Administer league content'),
+      'description' => t('Permission to administer leagues e.g. Create new leagues and add races'),
+    ),
+  );  
+}
+
+
 function league_help($path, $arg) {
   $output = '';
   switch ($path) {
@@ -21,20 +35,6 @@ function league_help($path, $arg) {
     break;
   }
   return $output;
-}
-
-
-function league_permission() {
-  return array(
-      'access league content' => array(
-        'title' => t('Access league content'),
-        'description' => t('Permission to view the league contents'),
-      ),
-    'administer league' => array(
-      'title' => t('Administer league content'),
-      'description' => t('Perform maintenance tasks for my module'),
-    )
-  );  
 }
 
 
@@ -98,7 +98,7 @@ function league_admin() {
     '#description' => t("Standings Block title."), 
     '#maxlength' => '30', '#size' => '30');
       
-  $result = db_query("SELECT * FROM {profile_fields}");
+  $result = db_query("SELECT * FROM {profile_field}");
   $profile_fields = array();
   foreach ($result as $row) {
     $profile_fields[$row->name] = $row->title . " - (" . $row->name . ")";
@@ -442,7 +442,7 @@ function league_get_profile_names($id = -1, $profile_replace_string = "") {
   preg_match_all("/{(\w*)}/", $profile_replace_string, $replaceVariables, PREG_PATTERN_ORDER);
   
   $replaceVariables = $replaceVariables[1];
-  $result = db_query("SELECT * FROM {profile_fields}");
+  $result = db_query("SELECT * FROM {profile_field}");
   
   foreach ($result as $row) {
     if (strtolower($row->name) == $profile_lfsworldname) {
