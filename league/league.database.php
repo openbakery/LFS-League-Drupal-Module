@@ -5,7 +5,7 @@ function _league_fetch_leagues()
   $queryResult = db_query("SELECT * FROM {league_leagues}");
   
   $result = array();
-  while ($row = db_fetch_object($queryResult)) {
+  foreach ($queryResult as $row) {
     $result[$row->id] = new League(
       $row->id, 
       $row->name, 
@@ -24,24 +24,24 @@ function _league_fetch_rules()
 {
   $queryResult = db_query("SELECT * FROM {league_rules}");
   $result = array();
-  while ($row = db_fetch_object($queryResult)) {
+  foreach ($queryResult as $row) {
     $result[$row->id] = new Rule(
-      $row->id,
-      $row->name,
-      $row->main_race_points,
-      $row->main_race_fastest_lap,
-      $row->sprint_race_points,
-      $row->sprint_race_fastest_lap,
-      $row->poleposition_points,
-      $row->sprint_poleposition_points);
+    $row->id,
+    $row->name,
+    $row->main_race_points,
+    $row->main_race_fastest_lap,
+    $row->sprint_race_points,
+    $row->sprint_race_fastest_lap,
+    $row->poleposition_points,
+    $row->sprint_poleposition_points);
   }
   return $result;
 }
 
 function _league_fetch_races($leagueId) {
-  $result = db_query("SELECT * FROM {league_races} WHERE league_id = %d ORDER BY date", $leagueId);
+  $result = db_query("SELECT * FROM {league_races} WHERE league_id = :leagueId ORDER BY date", array('leagueId' => $leagueId) );
   $races = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $races[$row->id] = new Race($row->id, $row->name, $row->date, $row->league_id);
   }
   return $races;
@@ -49,10 +49,10 @@ function _league_fetch_races($leagueId) {
 
 
 function _league_fetch_race_entry($id) {
-  $query = "SELECT * FROM {league_races} AS races, {league_races_entries} as entries WHERE entries.id = %d AND entries.race_id = races.id";
-  $result = db_query($query, $id);
+  $query = "SELECT * FROM {league_races} AS races, {league_races_entries} as entries WHERE entries.id = :id AND entries.race_id = races.id";
+  $result = db_query($query, array(':id' => $id));
 
-  if ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $race = new RaceEntry($row->race_id, $row->id, $row->league_id);
     $race->name = $row->name;
     $race->data = $row->date;
@@ -72,4 +72,3 @@ function _league_fetch_race_entry($id) {
 }
 
 
-?>

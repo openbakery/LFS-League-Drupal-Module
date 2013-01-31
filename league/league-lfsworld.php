@@ -51,6 +51,3 @@ function league_results_lfsworld($id = 0) {
   module_invoke_all('exit');
   exit;
 }
-
-
-?>

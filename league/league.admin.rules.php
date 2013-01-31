@@ -31,7 +31,7 @@ function league_admin_leagues_rules() {
 
 
   $i=0;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     if ( ($i%2) == 0) {
       $content .= '<tr class="league-even">';
     } else {
@@ -56,7 +56,7 @@ function league_admin_leagues_rules_add($id = NULL) {
  return drupal_get_form('league_admin_leagues_rules_form', $id);   
 }
 
-function league_admin_leagues_rules_form($form_state, $id = NULL) {
+function league_admin_leagues_rules_form($form, &$form_state, $id = NULL) {
 
   if (isset($id)) {
     $values = league_admin_leagues_rules_values($id);
@@ -83,6 +83,10 @@ function league_admin_leagues_rules_form($form_state, $id = NULL) {
     '#required' => TRUE,
     '#default_value' => $values['main_race_points']);
 
+  if (!$values['main_race_fastest_lap']) {
+    $values['main_race_fastest_lap'] = 0;
+  }
+
   $form['main_race_fastest_lap'] = array(
     '#type' => 'textfield', 
     '#title' => t('Points main race fastest lap'),
@@ -90,28 +94,48 @@ function league_admin_leagues_rules_form($form_state, $id = NULL) {
     '#required' => TRUE,
     '#default_value' => $values['main_race_fastest_lap']);
 
+  if (!$values['sprint_race_points']) {
+    $values['sprint_race_points'] = 0;
+  }
+
   $form['sprint_race_points'] = array(
     '#type' => 'textfield', 
     '#title' => t('Points sprint race'),
     '#cols' => 40,
+    '#required' => TRUE,
     '#default_value' => $values['sprint_race_points']);
+
+  if (!$values['sprint_race_fastest_lap']) {
+    $values['sprint_race_fastest_lap'] = 0;
+  }
 
   $form['sprint_race_fastest_lap'] = array(
     '#type' => 'textfield', 
     '#title' => t('Points sprint race fastest lap'),
     '#cols' => 2,
+    '#required' => TRUE,
     '#default_value' => $values['sprint_race_fastest_lap']);      
+
+  if (!$values['poleposition_points']) {
+    $values['poleposition_points'] = 0;
+  }
 
   $form['poleposition_points'] = array(
     '#type' => 'textfield', 
     '#title' => t('Points for the pole position'),
     '#cols' => 2,
+    '#required' => TRUE,
     '#default_value' => $values['poleposition_points']);
 
+  if (!$values['sprint_poleposition_points']) {
+    $values['sprint_poleposition_points'] = 0;
+  }
+  
   $form['sprint_poleposition_points'] = array(
     '#type' => 'textfield', 
     '#title' => t('Points for the sprint race pole position'),
     '#cols' => 2,
+    '#required' => TRUE,
     '#default_value' => $values['sprint_poleposition_points']);
 
   if (isset($id)) {
@@ -138,33 +162,32 @@ function league_admin_leagues_rules_form_submit($form, &$form_state) {
   }
   $edit = $form_state['values'];
   
+  $fields = array(
+    'main_race_points' => $edit['main_race_points'],  
+    'main_race_fastest_lap' => $edit['main_race_fastest_lap'], 
+    'sprint_race_points' => $edit['sprint_race_points'], 
+    'sprint_race_fastest_lap' => $edit['sprint_race_fastest_lap'],
+    'name' => $edit['name'],
+    'poleposition_points' => $edit['poleposition_points'],
+    'sprint_poleposition_points' => $edit['sprint_poleposition_points']
+  );
+  
   if ($edit['id'] > 0) {
-    
-    db_query("UPDATE {league_rules} SET main_race_points = '%s', main_race_fastest_lap = %d, " .  
-      "sprint_race_points = '%s', sprint_race_fastest_lap = %d, name = '%s', poleposition_points = %d, sprint_poleposition_points = %d " .
-      " WHERE id = '%d'", 
-    $edit['main_race_points'], 
-    $edit['main_race_fastest_lap'], 
-    $edit['sprint_race_points'], 
-    $edit['sprint_race_fastest_lap'], 
-    $edit['name'], 
-    $edit['poleposition_points'],
-    $edit['sprint_poleposition_points'],
-    $edit['id']); 
+
+    db_update('league_rules')
+      ->fields($fields)
+      ->condition('id', $edit['id'])
+      ->execute();
   } else {
-    $result = db_query("INSERT INTO {league_rules} ".
-      "(id, main_race_points, main_race_fastest_lap, sprint_race_points, " . 
-      "sprint_race_fastest_lap, name, poleposition_points, sprint_poleposition_points) " . 
-      " VALUES('', '%s', %d, '%s', %d, '%s', %d, %d)", $edit['main_race_points'], $edit['main_race_fastest_lap'],
-      $edit['sprint_race_points'], $edit['sprint_race_fastest_lap'], $edit['name'], $edit['poleposition_points'],
-      $edit['sprint_poleposition_points']); 
+    db_insert('league_rules')
+      ->fields($fields)
+      ->execute();
   }
   $form_state['redirect'] = 'admin/league/rules';
-  
 }
 
 
-function league_admin_leagues_rules_delete($form_state, $id = NULL) {  
+function league_admin_leagues_rules_delete($form, &$form_state, $id = NULL) {  
   if (!isset($id)) {
     drupal_not_found();
     return;
@@ -190,7 +213,9 @@ function league_admin_leagues_rules_delete_submit($form, &$form_state) {
     return;
   }
   
-  db_query("DELETE FROM {league_rules} WHERE id = %d", $form_state['values']['id']);
+  db_delete('league_rules')
+    ->condition('id', $form_state['values']['id'])
+    ->execute();
 
   $form_state['redirect'] = 'admin/league/rules';
 }
@@ -198,12 +223,12 @@ function league_admin_leagues_rules_delete_submit($form, &$form_state) {
 function league_admin_leagues_rules_values($id) {
   
 
-  $result = db_query("SELECT * FROM {league_rules} WHERE id=%d", $id);
+  $result = db_query("SELECT * FROM {league_rules} WHERE id= :id", array(':id' => $id) );
     
   $values = array();
 
-  if ($row = db_fetch_object($result)) {
-    $values['id'] = $row->id;
+ foreach ($result as $row) {
+	$values['id'] = $row->id;
     $values['name'] = $row->name;
     $values['main_race_points'] = $row->main_race_points;
     $values['main_race_fastest_lap'] = $row->main_race_fastest_lap;
@@ -216,4 +241,3 @@ function league_admin_leagues_rules_values($id) {
   return $values;
 }
 
-?>
