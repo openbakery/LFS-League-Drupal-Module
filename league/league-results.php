@@ -104,6 +104,7 @@ function _league_show_race_result($race, $id, $names) {
   if (empty($raceResult)) {
     return '<div>' . t('No Result found') . '</div>';
   }
+	
   
   $content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
@@ -192,17 +193,20 @@ function _league_results_detail(&$content, $id) {
   $names = league_get_profile_names();
   $type = _league_results_main($content, NULL, $id, $names);
   if ($type == 2) {
+		echo "RETURN";
     return $content;
   }
-  
   $query = "SELECT drivers.lfsworld_name, drivers.starting_position, results.position, drivers.starting_position-results.position AS gain " .
      "FROM {league_results} AS results, {league_drivers} AS drivers " .
      "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id " .
-     "AND (drivers.starting_position-results.position) > 0 " .
+     "AND results.position > 0 " .
      "ORDER BY gain DESC";
+
       
   $result = db_query($query, array(':id' => $id));
+
   if ($result->rowCount()== 0) {
+		echo "NO RESULT";
     return $content;
   }
   

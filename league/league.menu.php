@@ -7,7 +7,6 @@ function league_menu() {
   $items['league'] = array(
     'title' => 'Leagues',
     'page callback' => 'league',
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
   );
 
@@ -15,7 +14,6 @@ function league_menu() {
     'title' => 'Result',
     'page callback' => 'league_results',
     'page arguments' => array(2),
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
   );
 
@@ -24,7 +22,6 @@ function league_menu() {
     'title' => 'Standings',
     'page callback' => 'league_standings',
     'page arguments' => array(1),
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
     'file' => 'league.standings.php'
   );
@@ -33,14 +30,12 @@ function league_menu() {
     'page callback' => 'league_standings_rookies',
     'page arguments' => array(1),
     'title' => 'Rookie Standings',
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
-    type => MENU_CALLBACK,
+    'type' => MENU_CALLBACK,
     'file' => 'league.standings.php'
   );  
 
   $items['league/teams/standings'] = array(
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
     'page callback' => 'league_teams_standings',
     'title' => 'Team Standings',
@@ -48,7 +43,6 @@ function league_menu() {
   );
 
   $items['league/%/races'] = array(
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
     'page callback' => 'league_races',
     'page arguments' => array(1),
@@ -58,7 +52,6 @@ function league_menu() {
   );
 
   $items['league/driver/detail'] = array(
-    'access callback' =>  'user_access',
     'access arguments' => array('access league content'),
     'page callback' => 'league_driver_detail',
     'title' => 'Driver Detail',
@@ -82,12 +75,11 @@ function league_menu() {
 //*************************************************************
   $items['admin/league'] = array(
     'access callback' => 'user_access',
-    'access arguments ' => array('administer league'),
+    'access arguments' => array('administer league'),
     'page callback' => 'league_admin_leagues',
     'title' => 'Leagues',
     'file' => 'league.admin.league.php'
   );
-
 
 
   $items['admin/league/list'] = array(
@@ -103,7 +95,7 @@ function league_menu() {
   $items['admin/league/add'] = array(
     'title' => 'Add',
     'access callback' => 'user_access',
-    'access arguments ' => array('administer league'),
+    'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_form'),
     'file' => 'league.admin.league.php',
@@ -113,7 +105,7 @@ function league_menu() {
   $items['admin/league/%/delete'] = array(
     'title' => 'Delete',
     'access callback' => 'user_access',
-    'access arguments ' => array('administer league'),
+    'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_delete', 2),
     'file' => 'league.admin.league.php',
@@ -136,7 +128,6 @@ function league_menu() {
 //*************************************************************
 
   $items['admin/league/rules'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'league_admin_leagues_rules',
     'title' => 'Rules',
@@ -154,7 +145,6 @@ function league_menu() {
 
   $items['admin/league/rules/add'] = array(
     'title' => 'Add league rules',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_rules_form'),
@@ -164,7 +154,6 @@ function league_menu() {
 
   $items['admin/league/rules/%/delete'] = array(
     'title' => 'Delete League Rules',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_rules_delete', 3),
@@ -174,7 +163,6 @@ function league_menu() {
 
   $items['admin/league/rules/%/edit'] = array(
     'title' => 'Edit a league rules',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_rules_form', 3),
@@ -188,7 +176,6 @@ function league_menu() {
 
   $items['admin/league/%'] = array(
     'title' => 'Races',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'league_admin_leagues_races',
     'page arguments' => array(2),
@@ -212,7 +199,6 @@ function league_menu() {
 
   $items['admin/league/%/races/add'] = array(
     'title' => 'Add Race',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_leagues_races_form', 2),
@@ -222,7 +208,6 @@ function league_menu() {
   );
   $items['admin/league/%/races/%/delete'] = array(
     'title' => 'League races',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -232,7 +217,6 @@ function league_menu() {
 
   $items['admin/league/%/races/%/edit'] = array(
     'title' => 'Edit a league races',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -247,7 +231,6 @@ function league_menu() {
 
   $items['admin/league/%/upload'] = array(
     'title' => 'Upload Racecontrol file',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_admin_upload_form', 2),
@@ -257,14 +240,12 @@ function league_menu() {
     
   );
 
-
 //************************************************************
 //  ADMIN RACES RESULTS
 //************************************************************
   
   $items['admin/league/%/races/results'] = array(
     'title' => 'Results',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'league_admin_races_results',
     'page arguments' => array(2),
@@ -274,16 +255,14 @@ function league_menu() {
   
   
 //  $items['league/results/%result/lfsworld'] = array(
-//    'access callback' => 'user_access',
 //    'access arguments' => array('administer league'),
 //    'page callback' => 'league_results_lfsworld',
 //    'title' => 'Results',
-//    type => MENU_CALLBACK,
+//    'type' => MENU_CALLBACK,
 //    'file' => 'league.result.admin.php'
 //  );
 
   $items['admin/league/%/races/results/%/delete'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'title' => 'Delete results',
     'type' => MENU_DEFAULT_LOCAL_TASK,
@@ -295,23 +274,20 @@ function league_menu() {
 
   $items['admin/league/%/races/results/%/edit'] = array(
     'title' => 'Edit result',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_DEFAULT_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
     'page arguments' => array('league_results_edit_form', 2, 5),
     'file' => 'league.admin.results.php'
   );
-  
+
+
 
 //************************************************************
 //  ADMIN TEAMS
 //************************************************************
 
-
-
   $items['admin/league/%/teams'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'league_admin_teams',
     'page arguments' => array(2),
@@ -331,7 +307,6 @@ function league_menu() {
 
   $items['admin/league/%/teams/add'] = array(
     'title' => 'Add league team',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -343,7 +318,6 @@ function league_menu() {
 
   $items['admin/league/%/teams/%/delete'] = array(
     'title' => 'League Teams',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -353,7 +327,6 @@ function league_menu() {
 
   $items['admin/league/%/teams/%/edit'] = array(
     'title' => 'Edit a league teams',
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -362,7 +335,6 @@ function league_menu() {
   );
 
   $items['admin/league/%/teams/%'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'page callback' => 'league_admin_teams_drivers',
     'page arguments' => array(2, 4),
@@ -379,7 +351,6 @@ function league_menu() {
   );
   
   $items['admin/league/%/teams/%/add'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_LOCAL_TASK,
     'page callback' => 'drupal_get_form',
@@ -389,7 +360,6 @@ function league_menu() {
   );
   
   $items['admin/league/%/teams/%/%/edit'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',
@@ -399,7 +369,6 @@ function league_menu() {
   );
 
   $items['admin/league/%/teams/%/%/delete'] = array(
-    'access callback' => 'user_access',
     'access arguments' => array('administer league'),
     'type' => MENU_CALLBACK,
     'page callback' => 'drupal_get_form',

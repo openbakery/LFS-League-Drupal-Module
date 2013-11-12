@@ -127,8 +127,13 @@ function league_get_wind($wind) {
 }
 
 
-function league_get_track_name($track) {
+function league_get_track_name($trackCode) {
   $tracks = array();
+
+	if (strlen($trackCode) >= 3) {
+		$track = substr($trackCode, 0, 3);
+	}
+	
   $tracks["BL1"] = "Blackwood GP Track";
   $tracks["BL2"] = "Blackwood Rallycross";
   $tracks["BL3"] = "Blackwood Car Park";
@@ -159,6 +164,12 @@ function league_get_track_name($track) {
   $tracks["AS5"] = "Aston Grand Prix";
   $tracks["AS6"] = "Aston Grand Touring";
   $tracks["AS7"] = "Aston North";
+	
+	if (strtolower(substr($trackCode, -1)) == 'r') {
+		return $tracks[$track] . " rev.";
+	}
+	
+	
   return $tracks[$track];
 }
 

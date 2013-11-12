@@ -9,7 +9,6 @@ function league_admin_leagues_races($leagueId) {
   }
 
   
-  $queryString = "SELECT races.id as id, races.name as raceName, races.date as raceDate, leagues.name as leagueName " .
   $queryString = "SELECT races.id as id, races.name as racename, races.date as racedate, leagues.name as leagueName " .
     "FROM {league_races} as races, {league_leagues} as leagues " .
     "WHERE races.league_id = leagues.id " .
@@ -33,7 +32,7 @@ function league_admin_leagues_races($leagueId) {
     else {
       $content .= '<tr class="league-odd">';
     }
-    $content .= '<td>' . $row->racename . '</td>';
+    $content .= '<td>' . $row->racename .  '</td>';
     $content .= '<td>' . $row->racedate . '</td>';
     $content .= '<td><a href="?q=admin/league/' . $leagueId . '/races/' . $row->id . '/edit">' . t("Edit") . '</a></td>';
     $content .= '</tr>';
