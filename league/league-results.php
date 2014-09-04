@@ -8,8 +8,8 @@
  */
 
 
-function league_results($leagueId, $raceId) {
-  _league_results_detail($content, $leagueId, $raceId);
+function league_results($raceId) {
+  _league_results_detail($content, $raceId);
   return $content;
 } 
  
@@ -43,12 +43,12 @@ function _league_show_qualifying_result($id, $names) {
 
   $query = "SELECT results.*, drivers.id as driver_id, drivers.lfsworld_name, drivers.car, drivers.starting_position " .
     "FROM {league_results} AS results, {league_drivers} AS drivers " .
-    "WHERE results.raceEntry_id = %d  AND drivers.id = results.driver_id ORDER BY results.position";
+    "WHERE results.raceEntry_id = :id  AND drivers.id = results.driver_id ORDER BY results.position";
         
-  $result = db_query($query, $id);
-
+  $result = db_query($query, array(':id' => $id) );
+ 
   $i = 1;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
   
     if ( ($i%2) == 0) {
       $tdClass = "league-even";
@@ -101,6 +101,11 @@ function _league_show_qualifying_result($id, $names) {
 function _league_show_race_result($race, $id, $names) {
   
   $raceResult = _league_fetch_race_entry_result($race, $id, $names);
+  if (empty($raceResult)) {
+    return '<div>' . t('No Result found') . '</div>';
+  }
+	
+  
   $content .= "<div class=\"league-item\"><span class=\"league-label\">" . t('Name:') ."</span>" . $race->name . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Track:') ."</span>" . league_get_track_name($race->track) . "</div>";
   $content .=  "<div class=\"league-item\"><span class=\"league-label\">" . t('Duration:') ."</span>" . $race->laps . "</div>";
@@ -118,7 +123,9 @@ function _league_show_race_result($race, $id, $names) {
   $content .= '</tr>';
       
   $i = 1;
-
+  
+  
+  
   foreach($raceResult as $result) {
   
     if ( ($i%2) == 0) {
@@ -182,13 +189,26 @@ function league_get_race_result($id, $names) {
   return $content;
 }
 
-function _league_results_detail(&$content, $leagueId, $id) {
+function _league_results_detail(&$content, $id) {
   $names = league_get_profile_names();
   $type = _league_results_main($content, NULL, $id, $names);
   if ($type == 2) {
+		echo "RETURN";
     return $content;
   }
-  
+  $query = "SELECT drivers.lfsworld_name, drivers.starting_position, results.position, drivers.starting_position-results.position AS gain " .
+     "FROM {league_results} AS results, {league_drivers} AS drivers " .
+     "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id " .
+     "AND results.position > 0 " .
+     "ORDER BY gain DESC";
+
+      
+  $result = db_query($query, array(':id' => $id));
+
+  if ($result->rowCount()== 0) {
+		echo "NO RESULT";
+    return $content;
+  }
   
   if (module_exists('league_graph')) {
     $content .= '<a href="?q=league_graph/detailsSelect/' . $id . '">' . t('Driver compare chart') . '</a><br/>';
@@ -200,16 +220,9 @@ function _league_results_detail(&$content, $leagueId, $id) {
   $content .= '<table border="0" class="league" >';
   $content .= '<tr><th>' . t('Pos') . '</th><th>' . t('Driver') . '</th><th>' . t('Start') . '</th><th>' . t('Finish') . '</th><th>' . t('Gain') . '</th></tr>';
     
-  $query = "SELECT drivers.lfsworld_name, drivers.starting_position, results.position, drivers.starting_position-results.position AS gain " .
-     "FROM {league_results} AS results, {league_drivers} AS drivers " .
-     "WHERE results.raceEntry_id = %d AND drivers.id = results.driver_id " .
-     "AND (drivers.starting_position-results.position) > 0 " .
-     "ORDER BY gain DESC";
-      
-  $result = db_query($query, $id);
 
   $i = 1;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
 
     if ( ($i%2) == 0) {
       $tdClass = "league-even";
@@ -253,15 +266,15 @@ function _league_results_detail(&$content, $leagueId, $id) {
 
   $query = "SELECT drivers.id, drivers.lfsworld_name, results.fastest_lap, min(laps.number) as number " . 
     "FROM {league_results} AS results, {league_drivers} AS drivers, {league_laps} AS laps " .
-    "WHERE results.raceEntry_id = %d AND drivers.id = results.driver_id ". 
-    "AND laps.raceEntry_id = %d AND laps.time = results.fastest_lap AND laps.driver_id = drivers.id " . 
+    "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id ". 
+    "AND laps.raceEntry_id = :id AND laps.time = results.fastest_lap AND laps.driver_id = drivers.id " . 
     "GROUP BY drivers.id ORDER BY fastest_lap";
     
-  $result = db_query($query, $id, $id);
+  $result = db_query($query, array(':id' => $id));
 
   $fastestLapByDriver = array();
   $i = 1;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $name = null;
     if ($names) {
       $name = $names[strtolower($row->lfsworld_name)];
@@ -306,17 +319,17 @@ function _league_results_detail(&$content, $leagueId, $id) {
       
   //$query = "SELECT driver_id,min(split1) as split1, min(split2) as split2, min(split3) as split3, min(split4) as split4 FROM {league_laps} {league_driver} WHERE raceEntry_id=" . $id . " AND time > 0 GROUP BY driver_id";
 
-  $query = "SELECT driver_id, number, split1, split2, split3, split4 FROM {league_laps} {league_driver} WHERE raceEntry_id=%d " .  
+  $query = "SELECT driver_id, number, split1, split2, split3, split4 FROM {league_laps} {league_driver} WHERE raceEntry_id = :id " .  
     " AND time > 0 ORDER BY driver_id, number";
   
-  $result = db_query($query, $id);
+  $result = db_query($query, array(':id' => $id));
 
   $split = array();
   $splitLapNumber = array();
   $sumSplit = array();
   $sumSplit[1] = 1;
   $bestPossibleLap = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     if ($split[1][$row->driver_id] == 0 || $split[1][$row->driver_id] > $row->split1) {
       $split[1][$row->driver_id] = $row->split1;
       $splitLapNumber[1][$row->driver_id] = $row->number;
@@ -424,14 +437,14 @@ function _league_results_detail(&$content, $leagueId, $id) {
     
   $content .= '</table>';
 
-  $query = "SELECT driver_id, count(type) AS count, type FROM {league_flags} where raceEntry_id = %d ". 
+  $query = "SELECT driver_id, count(type) AS count, type FROM {league_flags} where raceEntry_id = :id ". 
     " GROUP BY driver_id, type ORDER BY type, count DESC";
    
-  $result = db_query($query, $id);
+  $result = db_query($query, array(':id' => $id) );
 
   $blueFlags = array();
   $yellowFlags = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     if ($row->type == 1) {
       $blueFlags[$row->driver_id] = $row->count;
     } else {
@@ -480,13 +493,13 @@ function _league_results_detail(&$content, $leagueId, $id) {
   $content .= '<tr><th>'. t('Driver') . '</th><th>' . t('Wheels') . '</th><th>' . t('Work') . '</th><th>' . t('Time') . '</th></tr>';
   
   $query = "SELECT driver_id, numberStops, rearLeft, rearRight, frontLeft, frontRight, work, pitStopTime " .
-    " FROM {league_laps} WHERE pit > 0 AND raceEntry_id = %d ORDER BY driver_id, numberStops";
+    " FROM {league_laps} WHERE pit > 0 AND raceEntry_id = :id ORDER BY driver_id, numberStops";
 
    
-  $result = db_query($query, $id);
+  $result = db_query($query, array(':id' => $id) );
   $i = 0;
   $oldDriver = 0;
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     
     if ($oldDriver != $row->driver_id) {
       $i++;
@@ -593,9 +606,9 @@ function _league_fetch_race_entry_result($raceEntry, $id, $names) {
 
   $query = "SELECT results.*, drivers.id as driver_id, drivers.lfsworld_name, drivers.car, drivers.starting_position " .
     "FROM {league_results} AS results, {league_drivers} AS drivers " .
-    "WHERE results.raceEntry_id = %d AND drivers.id = results.driver_id ORDER BY results.position";
+    "WHERE results.raceEntry_id = :id AND drivers.id = results.driver_id ORDER BY results.position";
         
-  $queryResult = db_query($query, $id);
+  $queryResult = db_query($query, array(':id' => $id) );
 
   $league_id = $raceEntry->leagueId;
   if (!$league_id) {
@@ -608,7 +621,7 @@ function _league_fetch_race_entry_result($raceEntry, $id, $names) {
   $i = 1;
   $raceResult = array();
 
-  while ($row = db_fetch_object($queryResult)) {
+  foreach ($queryResult as $row) {
   
     $result = new Result();
     $lfsworldName = strtolower($row->lfsworld_name);
@@ -666,5 +679,3 @@ function _league_fetch_race_entry_result($raceEntry, $id, $names) {
   return $raceResult;
 }
 
-
-?>

@@ -24,11 +24,11 @@ function league_races($leagueId) {
   if ($leagueId != "") {
 
         $query = "SELECT * FROM {league_races} as race,  {league_races_entries} as entry " .
-          "WHERE race.league_id= %d AND entry.race_id = race.id ORDER BY date, server ";
-        $result = db_query($query, $leagueId);
+          "WHERE race.league_id= :leagueId AND entry.race_id = race.id ORDER BY date, server ";
+        $result = db_query($query, array(':leagueId' => $leagueId) );
 
         $i = 1;
-        while ($row = db_fetch_object($result)) {
+        foreach ($result as $row) {
           if ( ($i%2) == 0) {
             $tdClass = "league-even";
           } 
@@ -66,5 +66,3 @@ function league_races($leagueId) {
   
 }
 
-
-?>

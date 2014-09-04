@@ -2,6 +2,7 @@
 
 
 function league_admin_leagues() {
+
   if (!user_access('administer league')) {
     drupal_access_denied();  
     return;
@@ -38,12 +39,13 @@ function league_admin_leagues() {
   return $content;  
 }
 
-
+/*
 function league_admin_leagues_add($id = NULL) {
  return drupal_get_form('league_admin_leagues_form', $id);
 }
+*/
 
-function league_admin_leagues_form($form_state, $id = NULL) {
+function league_admin_leagues_form($form, &$form_state, $id = NULL) {
   
   if (isset($id)) {
     $values = league_admin_leagues_values($id);
@@ -71,7 +73,7 @@ function league_admin_leagues_form($form_state, $id = NULL) {
     
   $result = db_query("SELECT * FROM {league_rules}");
   $rules = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $rules[$row->id] = $row->name;
   }  
   
@@ -159,42 +161,32 @@ function league_admin_leagues_form_submit($form, &$form_state) {
   
   $edit = $form_state['values'];
   
+	$fields = array(
+		'name' => $edit['name'],
+		'description' => $edit['description'],
+		'homepage' => $edit['homepage'], 
+		'rules_id' => $edit['rules'], 
+		'servers' => $edit['servers'], 
+		'rookies' => $edit['rookies'], 
+		'number_counting_results' => $edit['number_counting_results'], 
+		'name_pattern' => $edit['name_pattern'], 
+		'block_name_pattern' => $edit['block_name_pattern']
+	);
+	
   if ($edit['id'] > 0) {
-    
-    db_query("UPDATE {league_leagues} SET name = '%s', description = '%s', " .  
-      "homepage = '%s', rules_id = %d, servers = %d, rookies = '%s', number_counting_results = %d , name_pattern = '%s', block_name_pattern = '%s' " .
-      "WHERE id = %d", 
-      $edit['name'], 
-      $edit['description'], 
-      $edit['homepage'], 
-      $edit['rules'],
-      $edit['servers'],
-      $edit['rookies'],
-      $edit['number_counting_results'],
-      $edit['name_pattern'],
-      $edit['block_name_pattern'],
-      $edit['id']
-      ); 
-       
-  } 
-  else {
-    $result = db_query("INSERT INTO {league_leagues} ". 
-     "(id, name, description, servers, homepage, rules_id, rookies, number_counting_results, name_pattern, block_name_pattern) " . 
-     " VALUES('', '%s', '%s', '%s', '%s', %d, '%s', %d, '%s', '%s')", 
-     $edit['name'], 
-     $edit['description'], 
-     $edit['servers'], 
-     $edit['homepage'], 
-     $edit['rules'], 
-     $edit['rookies'], 
-     $edit['number_counting_results'], 
-     $edit['name_pattern'], 
-     $edit['block_name_pattern']); 
+		db_update('league_leagues')
+			->fields($fields)
+			->condition('id', $edit['id'])
+			->execute();	
+  } else {
+			db_insert('league_leagues')
+				->fields($fields)
+				->execute();	
   }
   $form_state['redirect'] = 'admin/league';
 }
 
-function league_admin_leagues_delete($form_state, $id = NULL) {
+function league_admin_leagues_delete($form, &$form_state, $id = NULL) {
   if (!isset($id)) {
     drupal_not_found();
     return;
@@ -219,8 +211,10 @@ function league_admin_leagues_delete_submit($form, &$form_state) {
     drupal_access_denied();  
     return;
   }
-  
-  db_query("DELETE FROM {league_leagues} WHERE id = %d", $form_state['values']['id']);
+	
+	db_delete('league_leagues')
+		->condition('id', $form_state['values']['id'])
+		->execute();
 
   $form_state['redirect'] = 'admin/league';
 }
@@ -229,9 +223,9 @@ function league_admin_leagues_values($id = -1) {
   $values = array();
   
   if ($id > 0) {
-    $result = db_query("SELECT * FROM {league_leagues} WHERE id = %d", $id);
+    $result = db_query("SELECT * FROM {league_leagues} WHERE id = :id ", array(':id' => $id) );
 
-    if ($row = db_fetch_object($result)) {
+    foreach ($result as $row) {
       $values['id'] = $row->id;
       $values['name'] = $row->name;
       $values['description'] = $row->description;
@@ -246,5 +240,3 @@ function league_admin_leagues_values($id = -1) {
   }
   return $values;
 }
-
-?>

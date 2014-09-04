@@ -3,7 +3,7 @@
 include(drupal_get_path('module', 'league') .'/league.races.php');
 
 
-function league_admin_races_results($leagueId, $raceId) {
+function league_admin_races_results($leagueId) {
   $content .= league_races($leagueId);
   return $content;
 }
@@ -20,7 +20,7 @@ function result_load($resultId) {
   return $resultId;
 }
 
-function league_results_edit_form($form_state, $resultId, $resultEntryId)
+function league_results_edit_form($form, &$form_state, $resultId, $resultEntryId)
 {
   $values = league_admin_results_values($resultEntryId);
   $form = array();
@@ -138,12 +138,12 @@ function league_results_edit_form($form_state, $resultId, $resultEntryId)
 function league_admin_results_values($id) {
   
   $result = db_query("SELECT *, results.id as result_id FROM {league_results} AS results, {league_drivers} AS drivers " . 
-    "WHERE results.driver_id = drivers.id AND results.id=%d", $id);
+    "WHERE results.driver_id = drivers.id AND results.id=:id", array(':id' =>$id) );
     
   $values = array();
 
-  if ($row = db_fetch_object($result)) {
-    $values['result_id'] = $row->result_id;
+ foreach ($result as $row) {
+	$values['result_id'] = $row->result_id;
     $values['raceEntry_id'] = $row->raceEntry_id;
     $values['driver_id'] = $row->driver_id;
     $values['position'] = $row->position;
@@ -156,7 +156,6 @@ function league_admin_results_values($id) {
     $values['starting_position'] = $row->starting_position;
     $values['car'] = $row->car;
     $values['plate'] = $row->plate;
-    
   }
   return $values;
 }
@@ -171,35 +170,36 @@ function league_results_edit_form_submit($form, &$form_state) {
   
   $edit = $form_state['values'];
   
+
+  
   if ($edit['result_id'] > 0) {
+	  $fields = array(
+			'raceEntry_id' => $edit['raceEntry_id'], 
+			'driver_id' => $edit['driver_id'],
+			'position' => $edit['position'], 
+			'race_time' => $edit['race_time'], 
+			'fastest_lap' => $edit['fastest_lap'],
+			'laps' => $edit['laps'],
+			'pitstops' => $edit['pitstops'],
+			'confirmation_flags' => _league_confirmation_flags_value($edit['confirmation_flags_options']),
+			'penalty' => $edit['penalty']
+	  );
    
-    $confirmation_flags_options = _league_confirmation_flags_value($edit['confirmation_flags_options']);
+		db_update('league_results')
+		  ->fields($fields)
+		  ->condition('id', $edit['result_id'])
+		  ->execute();
 
-    db_query("UPDATE {league_results} SET raceEntry_id = %d, driver_id = %d, " .  
-      "position = %d, race_time = %d, fastest_lap = %d, laps = %d, " .
-      "pitstops = %d, confirmation_flags = %d, penalty = %d " .
-      "WHERE id = %d", 
-      $edit['raceEntry_id'], 
-      $edit['driver_id'], 
-      $edit['position'], 
-      $edit['race_time'],
-      $edit['fastest_lap'],
-      $edit['laps'],
-      $edit['pitstops'],
-      $confirmation_flags_options,
-      $edit['penalty'],
-      $edit['result_id']
-      ); 
-
-    db_query("UPDATE {league_drivers} SET nickname = '%s', starting_position = %d, " .  
-      "car = '%s', plate = '%s' " .
-      "WHERE id = %d", 
-      $edit['nickname'], 
-      $edit['starting_position'], 
-      $edit['car'], 
-      $edit['plate'],
-      $edit['driver_id']
-      ); 
+		$fieldsDriver = array(
+		  'nickname' => $edit['nickname'], 
+			'starting_position' => $edit['starting_position'],
+			'car' => $edit['car'], 
+			'plate' => $edit['plate']
+		);
+		db_update('league_drivers')
+		  ->fields($fieldsDriver)
+		  ->condition('id', $edit['driver_id'])
+		  ->execute();
        
   }
   else
@@ -211,7 +211,7 @@ function league_results_edit_form_submit($form, &$form_state) {
 }
 
 
-function league_admin_results_delete($form_state, $leagueId = NULL, $id = NULL) {  
+function league_admin_results_delete($form, &$form_state, $leagueId = NULL, $id = NULL) {  
   
   if (!isset($id)) {
     drupal_not_found();
@@ -229,6 +229,7 @@ function league_admin_results_delete($form_state, $leagueId = NULL, $id = NULL) 
     t('Delete'),
     t('Cancel')
   );
+  
 }
 
 
@@ -238,11 +239,22 @@ function league_admin_results_delete_submit($form, &$form_state) {
     drupal_access_denied();
     return;
   }
-  
-  db_query("DELETE FROM {league_races_entries} WHERE id = %d", $form_state['values']['id']);
-  db_query("DELETE FROM {league_laps} WHERE raceEntry_id = %d", $form_state['values']['id']);
-  db_query("DELETE FROM {league_drivers} WHERE raceEntry_id = %d", $form_state['values']['id']);
-  db_query("DELETE FROM {league_results} WHERE raceEntry_id = %d", $form_state['values']['id']);
+	
+	db_delete('league_races_entries')
+	  ->condition('id', $form_state['values']['id'])
+	  ->execute();
+	
+	db_delete('league_laps')
+	  ->condition('raceEntry_id', $form_state['values']['id'])
+	  ->execute();
+
+	db_delete('league_drivers')
+	  ->condition('raceEntry_id', $form_state['values']['id'])
+	  ->execute();
+	
+	db_delete('league_results')
+	  ->condition('raceEntry_id', $form_state['values']['id'])
+	  ->execute();
 
   $form_state['redirect'] = 'admin/league/' . $form_state['values']['leagueId'] . '/races/results';
 }
@@ -253,4 +265,3 @@ function league_admin_results_add($id = NULL) {
 }
 */
 
-?>

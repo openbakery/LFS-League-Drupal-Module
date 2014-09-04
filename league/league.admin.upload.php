@@ -10,41 +10,43 @@
 $drivers = array();
 $raceEntryId = 0;
 
-function league_admin_upload_form($form_state, $leagueId) {
+function league_admin_upload_form($form, &$form_state, $leagueId) {
 
   if (!user_access('administer league')) {
     drupal_access_denied();
     return;
   }
 
-  $queryString = sprintf("SELECT leagues.name AS league, races.name AS race, races.id AS id, leagues.servers AS servers " .
+  $queryString = "SELECT leagues.name AS league, races.name AS race, races.id AS id, leagues.servers AS servers " .
     "FROM {league_races} AS races, {league_leagues} AS leagues " .
     "WHERE races.league_id = leagues.id ".
-    "AND leagues.id = %d", $leagueId);
+    "AND leagues.id = :leagueId";
   
-  $result = db_query($queryString);
+  $result = db_query($queryString, array(':leagueId' => $leagueId));
   $racesArray = array();
-  while ($row = db_fetch_object($result)) {
+  foreach ($result as $row) {
     $racesArray[$row->id] = $row->league . ' - ' . $row->race;
     $servers = $row->servers;
   }
-
-   $form['race'] = array(
+  
+  end($racesArray);
+  $form['race'] = array(
     '#type' => 'select', 
     '#title' => t('Race'),
     '#required' => TRUE,
-    '#default_value' => $values['race'],
+    '#default_value' => key($racesArray),
     '#options' => $racesArray);
 
   $serversArray = array();
   for($i=0;$i<$servers;$i++) {
     $serversArray[] = ($i+1);
   }
+
   $form['server'] = array(
     '#type' => 'select', 
     '#title' => t('Server'),
     '#required' => TRUE,
-    '#default_value' => $values['server'],
+    '#default_value' => 1,
     '#options' => $serversArray);   
 
 
@@ -79,16 +81,18 @@ function league_admin_upload_form($form_state, $leagueId) {
 
 function league_admin_upload_form_submit($form, &$form_state) {
 
-  
-  if($file = file_save_upload('uploaded_file', array(), file_directory_path(), FALSE)) {
-    $message = t('The attached file was successfully uploaded: ' . $file->filepath);
+  $directory = 'public://upload/league/';
+  file_prepare_directory($directory, FILE_CREATE_DIRECTORY);
+  if($file = file_save_upload('uploaded_file', array('file_validate_extensions' => array('rcsv')), $directory, FALSE)) {
+    $message = t('The attached file was successfully uploaded');
   	drupal_set_message($message);
   }	else	{
   	drupal_set_message(t('The attached file failed to upload. Please try again'));
+  	return;
   }
   
 
-  $raceEntryId = league_insert_stats_data($file->filepath, 
+  $raceEntryId = league_insert_stats_data($file->uri, 
     $form_state['values']['race'], 
     $form_state['values']['server'], 
     $form_state['values']['type']['type_options']); 
@@ -98,24 +102,33 @@ function league_admin_upload_form_submit($form, &$form_state) {
 
 function _league_insert_race($line = "", $raceId, $server, $type) {
   #Track; Laps; QualifyingMinutes; NumberRacers; Weather; Wind
-  echo $raceId . ", " . $name . ", " . $server . ", " . $date . ", " . $time . ", " . $type . "<br>";
+  #AS7;40;0;0;9;BRIGHT_CLEAR;NONE
+  #echo $raceId . ", " . $name . ", " . $server . ", " . $date . ", " . $time . ", " . $type . "<br>";
   
   global $raceEntryId;
   
   $token = explode(";", $line);
   
+  echo "line: " . $line;
+  print_r($token);
+  // line: SO5R;28;0;0;8;BRIGHT_CLEAR;NONE Array ( [0] => SO5R [1] => 28 [2] => 0 [3] => 0 [4] => 8 [5] => BRIGHT_CLEAR [6] => NONE )
   
-  $query = db_query("INSERT INTO {league_races_entries} VALUES('',%d, '%s',%d,%d,%d,%d,%d,%d)",
-    $raceId,
-    $token[0],
-    $token[1],
-    $token[2],
-    $token[4],
-    $token[5],
-    $type,
-    $server);
-    
-  $raceEntryId = mysql_insert_id();
+  $fields = array(
+    'race_id' => $raceId,
+    'track' => $token[0],
+    'laps' => $token[1],
+    'qualifing_minutes' => $token[2],
+    'weather' => 0, //$token[4],
+    'wind' => 0, //$token[5],
+    'type' => $type,
+    'server' => $server
+  );
+
+  $raceEntryId = db_insert('league_races_entries')
+    ->fields($fields)
+    ->execute();
+
+  return $raceEntryId;
   #echo "raceId--->" . $raceId . "<br>";
 }
 
@@ -125,22 +138,26 @@ function _league_insert_driver($line = "", $raceId, $server, $type) {
   global $drivers;
   global $raceEntryId;
   
-  $token = explode(";", $line);
+  list($lfsworld_name, $nickname, $car, $starting_position, $plate) = explode(";", $line);
   
-  $teams = league_team_drivers_values($raceId);
+  $teams = _league_team_drivers_values($raceId);
   
-  $result = db_query("INSERT INTO {league_drivers} VALUES('',%d, %d, '%s','%s', %d, '%s', '%s', %d)",
-    $raceEntryId,
-    0,
-    $token[0],
-    $token[1],
-    $token[3],
-    $token[2],
-    $token[4],
-    $teams[strtolower($token[0])]);
-  #echo "insert driver " . $tocken[0]; 
-  $driverId = mysql_insert_id();
-  $drivers[$token[0]] = $driverId;
+  $fields = array(
+    'raceEntry_id' => $raceEntryId,
+    'uid' => 0,
+    'lfsworld_name' => $lfsworld_name,
+    'nickname' => $nickname,
+    'starting_position' => $starting_position,
+    'car' => $car,
+    'plate' => $plate,
+    'team_id' => $teams[strtolower($lfsworld_name)],
+  );
+  
+  $driverId = db_insert('league_drivers')
+    ->fields($fields)
+    ->execute();
+ 
+  $drivers[$lfsworld_name] = $driverId;
 }
 
 function _league_insert_result($line = "", $raceId, $server, $type) {
@@ -150,21 +167,24 @@ function _league_insert_result($line = "", $raceId, $server, $type) {
   global $drivers;
   global $raceEntryId;
   
-  $token = explode(";", $line);
-  $driverId = $drivers[$token[0]];
+  list($lfsworld_name, $position, $race_time, $fastest_lap, $laps, $pitstops, $confirmation_flags) = explode(";", $line);
   
+  $driverId = $drivers[$lfsworld_name];
   
-  $result = db_query("INSERT INTO {league_results} " . 
-    "(raceEntry_id, driver_id, position, race_time, fastest_lap, laps, pitstops, confirmation_flags) " . 
-    " VALUES(%d, %d, %d, %d, %d, %d, %d, %d)",
-    $raceEntryId,
-    $driverId,
-    $token[1],
-    $token[2],
-    $token[3],
-    $token[4],
-    $token[5],
-    $token[6]);
+  $fields = array(
+    'raceEntry_id' => $raceEntryId,
+    'driver_id' => $driverId,
+    'position' => $position,
+    'race_time' => $race_time,
+    'fastest_lap' => $fastest_lap,
+    'laps' => $laps,
+    'pitstops' => $pitstops,
+    'confirmation_flags' => $confirmation_flags
+  );
+  
+  $driverId = db_insert('league_results')
+    ->fields($fields)
+    ->execute();
   
 }
 
@@ -181,48 +201,78 @@ function _league_insert_lap($line = "", $raceId, $server, $type) {
   global $raceEntryId;
    
   $token = explode(";", $line);
-  $driverId = $drivers[$token[0]];
+  list(
+    $lfsworld_name, 
+    $number, 
+    $time, 
+    $split1, 
+    $split2, 
+    $split3, 
+    $split4, 
+    $overallTime, 
+    $position,
+    $pit,
+    $penalty,
+    $numberStops,
+    $rearLeft,
+    $rearRight,
+    $frontLeft, 
+    $frontRight,
+    $work, 
+    $pitStopTime,
+    $takeOverNewUserName,
+    $oldPenalty,
+    $newPenalty
+  ) = explode(";", $line);
   
-  if (trim($token[9]) == 'true') {
+  
+  $driverId = $drivers[$lfsworld_name];
+  
+  if (trim($pit) == 'true') {
     $pit = 1;
   } else {
     $pit = 0;
   }
   
-  if ($token[10] == '') $token[10] = 0;
-  if ($token[11] == '') $token[11] = 0;
-  if ($token[12] == '') $token[12] = 255;
-  if ($token[13] == '') $token[13] = 255;
-  if ($token[14] == '') $token[14] = 255;
-  if ($token[15] == '') $token[15] = 255;
-  if ($token[16] == '') $token[16] = 0;
-  if ($token[17] == '') $token[17] = 0;
-  if ($token[19] == '') $token[19] = 0;
-  if ($token[20] == '') $token[20] = 0;
+  if ($penalty == '') $penalty = 0;
+  if ($numberStops == '') $numberStops = 0;
+  if ($rearLeft == '') $rearLeft = 255;
+  if ($rearRight == '') $rearRight = 255;
+  if ($frontLeft == '') $frontLeft = 255;
+  if ($frontRight == '') $frontRight = 255;
+  if ($work == '') $work = 0;
+  if ($pitStopTime == '') $pitStopTime = 0;
+  if ($oldPenalty == '') $oldPenalty = 0;
+  if ($newPenalty == '') $newPenalty = 0;
   
-  $result = db_query("INSERT INTO {league_laps} VALUES('',%d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, '%s', %d, %d)",
-    $driverId,
-    $raceEntryId,
-    $token[1],
-    $token[2],
-    $token[3],
-    $token[4],
-    $token[5],
-    $token[6],
-    $token[7],
-    $token[8],
-    $pit,
-    $token[10],
-    $token[11],
-    $token[12],
-    $token[13],
-    $token[14],
-    $token[15],
-    $token[16],
-    $token[17],
-    $token[18],
-    $token[19],
-    $token[20]);
+  $fields = array(
+    'driver_id' => $driverId,
+    'raceEntry_id' => $raceEntryId,
+    'number' => $number,
+    'time' => $time,
+    'split1' => $split1,
+    'split2' => $split2,
+    'split3' => $split3,
+    'split4' => $split4,
+    'overallTime' => $overallTime,
+    'position' => $position,
+    'pit' => $pit,
+    'penalty' => $penalty,
+    'numberStops' => $numberStops,
+    'rearLeft' => $rearLeft,
+    'rearRight' => $rearRight,
+    'frontLeft' => $rearRight,
+    'frontRight' => $rearRight,
+    'work' => $work,
+    'pitStopTime' => $pitStopTime,
+    'takeOverNewUserName' => $takeOverNewUserName,
+    'oldPenalty' => $oldPenalty,
+    'newPenalty' => $newPenalty
+  );
+  
+  db_insert('league_laps')
+    ->fields($fields)
+    ->execute();
   
 }
 
@@ -237,27 +287,32 @@ function _league_insert_flags($line = "", $raceId, $server, $type) {
   global $drivers;
   global $raceEntryId;
    
-  $token = explode(";", $line);
-  $driverId = $drivers[$token[0]];
-  $result = db_query("INSERT INTO {league_flags} VALUES('',%d, %d, %d, %d, %d)",
-    $driverId,
-    $raceEntryId,
-    $token[1],
-    $token[2],
-    $token[3]);
+  list($lfsworld_name, $lap_number, $type, $duration) = explode(";", $line);
   
+  $driverId = $drivers[$lfsworld_name];
+  
+  $fields = array(
+    'driver_id' => $driverId,
+    'raceEntry_id' => $raceEntryId,
+    'lap_number' => $lap_number,
+    'type' => $type,
+    'duration' => $duration,
+  );
+  
+  db_insert('league_flags')
+    ->fields($fields)
+    ->execute();
 }
 
 function _league_insert_nothing($line = "") {
 }
 
 function league_insert_stats_data($uploadfile, $raceId, $server, $type) {
-  echo $raceId . ", " . $name . ", " . $server . ", " . $date . ", " . $time . ", " . $type . "<br>";
+  //echo $raceId . ", " . $name . ", " . $server . ", " . $date . ", " . $time . ", " . $type . "<br>";
 
   global $raceEntryId;
   
   $SECTION_NAME = "RACECONTROL-SECTION:";
-
 
   $lines = file($uploadfile);
   
@@ -295,4 +350,5 @@ function league_insert_stats_data($uploadfile, $raceId, $server, $type) {
   }
   return $raceEntryId;
 }
-?>
+
+
