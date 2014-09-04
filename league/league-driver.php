@@ -68,9 +68,9 @@ function league_get_race_driver_detail($id) {
     $averageGain = 0;
 		
     $i = 0;
-
 		$name = null;
 		$content = "";
+
     foreach ($result as $row) {
       if (!$name) {
         $driver = null;
